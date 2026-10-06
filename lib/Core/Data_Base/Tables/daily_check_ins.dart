@@ -1,9 +1,10 @@
 import 'package:drift/drift.dart';
+import 'package:mind_care/Core/Data_Base/Tables/users.dart';
 
 class DailyCheckIns extends Table {
   TextColumn get id => text()();
 
-  TextColumn get userId => text()();
+  TextColumn get userId => text().references(Users, #id)();
 
   DateTimeColumn get date => dateTime()();
 

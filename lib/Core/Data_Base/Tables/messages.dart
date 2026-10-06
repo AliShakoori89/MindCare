@@ -1,9 +1,10 @@
 import 'package:drift/drift.dart';
+import 'conversations.dart';
 
 class Messages extends Table {
   TextColumn get id => text()();
 
-  TextColumn get conversationId => text()();
+  TextColumn get conversationId => text().references(Conversations, #id)();
 
   TextColumn get role => text()();
 
