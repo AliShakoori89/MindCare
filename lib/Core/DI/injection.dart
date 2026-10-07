@@ -8,6 +8,16 @@ import '../../Features/Conditions/Domain/Use_Cases/get_condition_by_id.dart';
 import '../../Features/Conditions/Domain/Use_Cases/get_conditions_by_user_id.dart';
 import '../../Features/Conditions/Domain/Use_Cases/update_condition.dart';
 import '../../Features/Conditions/Presentation/Bloc/condition_bloc.dart';
+import '../../Features/Conversations/Data/Data_Sources/conversation_local_data_source.dart';
+import '../../Features/Conversations/Data/Data_Sources/conversation_local_data_source_impl.dart';
+import '../../Features/Conversations/Data/Repositories/conversation_repository_impl.dart';
+import '../../Features/Conversations/Domain/Repositories/conversation_repository.dart';
+import '../../Features/Conversations/Domain/Use_Cases/archive_conversation.dart';
+import '../../Features/Conversations/Domain/Use_Cases/create_conversation.dart';
+import '../../Features/Conversations/Domain/Use_Cases/get_conversation_by_id.dart';
+import '../../Features/Conversations/Domain/Use_Cases/get_conversations_by_user_id.dart';
+import '../../Features/Conversations/Domain/Use_Cases/update_conversation.dart';
+import '../../Features/Conversations/Presentation/Bloc/conversation_bloc.dart';
 import '../../Features/Medications/Data/Data_Sources/medication_local_data_source.dart';
 import '../../Features/Medications/Data/Data_Sources/medication_local_data_source_impl.dart';
 import '../../Features/Medications/Data/Repositories/medication_repository_impl.dart';
@@ -40,6 +50,7 @@ import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/get_patient_p
 import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/get_patient_profile_by_user_id.dart';
 import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/update_patient_profile.dart';
 
+import '../Data_Base/Dao/conversations_dao.dart';
 import '../Data_Base/Dao/medications_dao.dart';
 
 
@@ -263,6 +274,64 @@ void configureDependencies() {
       sl<GetMedicationsByUserId>(),
       sl<UpdateMedication>(),
       sl<DeleteMedication>(),
+    ),
+  );
+
+  //------------------------------------------------------------
+
+  sl.registerLazySingleton<ConversationsDao>(
+        () => sl<AppDatabase>().conversationsDao,
+  );
+
+  sl.registerLazySingleton<ConversationLocalDataSource>(
+        () => ConversationLocalDataSourceImpl(
+      sl<ConversationsDao>(),
+    ),
+  );
+
+  sl.registerLazySingleton<ConversationRepository>(
+        () => ConversationRepositoryImpl(
+      sl<ConversationLocalDataSource>(),
+    ),
+  );
+
+  sl.registerFactory<CreateConversation>(
+        () => CreateConversation(
+      sl<ConversationRepository>(),
+    ),
+  );
+
+  sl.registerFactory<GetConversationById>(
+        () => GetConversationById(
+      sl<ConversationRepository>(),
+    ),
+  );
+
+  sl.registerFactory<GetConversationsByUserId>(
+        () => GetConversationsByUserId(
+      sl<ConversationRepository>(),
+    ),
+  );
+
+  sl.registerFactory<UpdateConversation>(
+        () => UpdateConversation(
+      sl<ConversationRepository>(),
+    ),
+  );
+
+  sl.registerFactory<ArchiveConversation>(
+        () => ArchiveConversation(
+      sl<ConversationRepository>(),
+    ),
+  );
+
+  sl.registerFactory<ConversationBloc>(
+        () => ConversationBloc(
+      sl<CreateConversation>(),
+      sl<GetConversationById>(),
+      sl<GetConversationsByUserId>(),
+      sl<UpdateConversation>(),
+      sl<ArchiveConversation>(),
     ),
   );
 }

@@ -4,7 +4,12 @@ import 'package:mind_care/Core/Data_Base/Tables/users.dart';
 class Conversations extends Table {
   TextColumn get id => text()();
 
-  TextColumn get userId => text().references(Users, #id)();
+  TextColumn get userId =>
+      text().references(
+        Users,
+        #id,
+        onDelete: KeyAction.cascade,
+      )();
 
   TextColumn get title => text().nullable()();
 
