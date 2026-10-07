@@ -28,6 +28,15 @@ import '../../Features/Medications/Domain/Use_Cases/get_medication_by_id.dart';
 import '../../Features/Medications/Domain/Use_Cases/get_medications_by_user_id.dart';
 import '../../Features/Medications/Domain/Use_Cases/update_medication.dart';
 import '../../Features/Medications/Presentation/Bloc/medication_bloc.dart';
+import '../../Features/Messages/Data/Data_Sources/message_local_data_source.dart';
+import '../../Features/Messages/Data/Repositories/message_repository_impl.dart';
+import '../../Features/Messages/Domain/Repositories/message_repository.dart';
+import '../../Features/Messages/Domain/Use_Cases/create_message.dart';
+import '../../Features/Messages/Domain/Use_Cases/delete_message.dart';
+import '../../Features/Messages/Domain/Use_Cases/get_message_by_id.dart';
+import '../../Features/Messages/Domain/Use_Cases/get_messages_by_conversation_id.dart';
+import '../../Features/Messages/Domain/Use_Cases/update_message.dart';
+import '../../Features/Messages/Presentation/Bloc/message_bloc.dart';
 import '../../Features/Patient_Profile/Presentation/Bloc/Patient_Profile_Bloc/Patient_Profile_Bloc.dart';
 import '../../Features/User/Data/Data_Sources/user_local_data_source.dart';
 import '../../Features/User/Data/Data_Sources/user_local_data_source_impl.dart';
@@ -52,6 +61,7 @@ import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/update_patien
 
 import '../Data_Base/Dao/conversations_dao.dart';
 import '../Data_Base/Dao/medications_dao.dart';
+import '../Data_Base/Dao/messages_dao.dart';
 
 
 final GetIt sl = GetIt.instance;
@@ -332,6 +342,58 @@ void configureDependencies() {
       sl<GetConversationsByUserId>(),
       sl<UpdateConversation>(),
       sl<ArchiveConversation>(),
+    ),
+  );
+
+  //------------------------------------------------------------------------
+
+  sl.registerLazySingleton<MessagesDao>(
+        () => MessagesDao(sl<AppDatabase>()),
+  );
+
+  sl.registerLazySingleton<MessageRepository>(
+        () => MessageRepositoryImpl(
+      sl<MessageLocalDataSource>(),
+    ),
+  );
+
+  sl.registerFactory(
+        () => CreateMessage(
+      sl<MessageRepository>(),
+    ),
+  );
+
+  sl.registerFactory(
+        () => GetMessageById(
+      sl<MessageRepository>(),
+    ),
+  );
+
+  sl.registerFactory(
+        () => GetMessagesByConversationId(
+      sl<MessageRepository>(),
+    ),
+  );
+
+  sl.registerFactory(
+        () => UpdateMessage(
+      sl<MessageRepository>(),
+    ),
+  );
+
+  sl.registerFactory(
+        () => DeleteMessage(
+      sl<MessageRepository>(),
+    ),
+  );
+
+  sl.registerFactory(
+        () => MessageBloc(
+      sl<CreateMessage>(),
+      sl<GetMessageById>(),
+      sl<GetMessagesByConversationId>(),
+      sl<UpdateMessage>(),
+      sl<DeleteMessage>(),
     ),
   );
 }

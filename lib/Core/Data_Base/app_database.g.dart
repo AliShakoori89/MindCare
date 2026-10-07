@@ -6263,7 +6263,7 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES conversations (id)',
+      'REFERENCES conversations (id) ON DELETE CASCADE',
     ),
   );
   static const VerificationMeta _roleMeta = const VerificationMeta('role');
@@ -6683,6 +6683,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final ConversationsDao conversationsDao = ConversationsDao(
     this as AppDatabase,
   );
+  late final MessagesDao messagesDao = MessagesDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6729,6 +6730,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('conversations', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'conversations',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('messages', kind: UpdateKind.delete)],
     ),
   ]);
 }

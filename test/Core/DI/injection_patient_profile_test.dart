@@ -18,7 +18,7 @@ void main() {
   });
 
   tearDown(() async {
-    await sl.reset(dispose: true);
+    await sl.reset();
   });
 
   test('PatientProfile dependencies should be registered', () {

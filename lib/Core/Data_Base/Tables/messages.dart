@@ -4,7 +4,12 @@ import 'conversations.dart';
 class Messages extends Table {
   TextColumn get id => text()();
 
-  TextColumn get conversationId => text().references(Conversations, #id)();
+  TextColumn get conversationId =>
+      text().references(
+        Conversations,
+        #id,
+        onDelete: KeyAction.cascade,
+      )();
 
   TextColumn get role => text()();
 
