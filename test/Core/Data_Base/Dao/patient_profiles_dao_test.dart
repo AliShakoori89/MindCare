@@ -109,6 +109,68 @@ void main() {
     expect(profile, isNull);
   });
 
+  test(
+    'deleting a user should cascade delete its patient profile',
+        () async {
+      final user = UsersCompanion.insert(
+        id: userId,
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      await usersDao.insertUser(user);
+
+      final profile = PatientProfilesCompanion.insert(
+        id: 'profile-1',
+        userId: 'user-1',
+        firstName: 'Ali',
+        lastName: 'Shakoori',
+        gender: 'male',
+        preferredLanguage: 'fa',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      await patientProfilesDao.insertProfile(profile);
+
+      // قبل از حذف User باید Profile وجود داشته باشد.
+      expect(
+        await patientProfilesDao.getProfileById('profile-1'),
+        isNotNull,
+      );
+
+      // حذف User
+      await usersDao.deleteUser('user-1');
+
+      // Profile باید به صورت Cascade حذف شده باشد.
+      expect(
+        await patientProfilesDao.getProfileById('profile-1'),
+        isNull,
+      );
+    },
+  );
+
+  test(
+    'insertProfile should fail when userId does not exist',
+        () async {
+      final profile = PatientProfilesCompanion.insert(
+        id: 'profile-1',
+        userId: 'non-existing-user',
+        firstName: 'Ali',
+        lastName: 'Shakoori',
+        gender: 'male',
+        preferredLanguage: 'fa',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      expect(
+            () => patientProfilesDao.insertProfile(profile),
+        throwsA(isA<Exception>()),
+      );
+    },
+  );
+
   test('insertProfile and getProfileById should work', () async {
     await createUser();
 
