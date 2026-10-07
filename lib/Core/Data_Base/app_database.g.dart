@@ -1670,7 +1670,7 @@ class $MedicationsTable extends Medications
     type: DriftSqlType.string,
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES users (id)',
+      'REFERENCES users (id) ON DELETE CASCADE',
     ),
   );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
@@ -6677,6 +6677,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this as AppDatabase,
   );
   late final ConditionsDao conditionsDao = ConditionsDao(this as AppDatabase);
+  late final MedicationsDao medicationsDao = MedicationsDao(
+    this as AppDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6709,6 +6712,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('conditions', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'users',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('medications', kind: UpdateKind.delete)],
     ),
   ]);
 }

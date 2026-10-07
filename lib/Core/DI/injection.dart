@@ -8,6 +8,16 @@ import '../../Features/Conditions/Domain/Use_Cases/get_condition_by_id.dart';
 import '../../Features/Conditions/Domain/Use_Cases/get_conditions_by_user_id.dart';
 import '../../Features/Conditions/Domain/Use_Cases/update_condition.dart';
 import '../../Features/Conditions/Presentation/Bloc/condition_bloc.dart';
+import '../../Features/Medications/Data/Data_Sources/medication_local_data_source.dart';
+import '../../Features/Medications/Data/Data_Sources/medication_local_data_source_impl.dart';
+import '../../Features/Medications/Data/Repositories/medication_repository_impl.dart';
+import '../../Features/Medications/Domain/Repositories/medication_repository.dart';
+import '../../Features/Medications/Domain/Use_Cases/create_medication.dart';
+import '../../Features/Medications/Domain/Use_Cases/delete_medication.dart';
+import '../../Features/Medications/Domain/Use_Cases/get_medication_by_id.dart';
+import '../../Features/Medications/Domain/Use_Cases/get_medications_by_user_id.dart';
+import '../../Features/Medications/Domain/Use_Cases/update_medication.dart';
+import '../../Features/Medications/Presentation/Bloc/medication_bloc.dart';
 import '../../Features/Patient_Profile/Presentation/Bloc/Patient_Profile_Bloc/Patient_Profile_Bloc.dart';
 import '../../Features/User/Data/Data_Sources/user_local_data_source.dart';
 import '../../Features/User/Data/Data_Sources/user_local_data_source_impl.dart';
@@ -29,6 +39,8 @@ import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/delete_patien
 import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/get_patient_profile_by_id.dart';
 import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/get_patient_profile_by_user_id.dart';
 import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/update_patient_profile.dart';
+
+import '../Data_Base/Dao/medications_dao.dart';
 
 
 final GetIt sl = GetIt.instance;
@@ -194,6 +206,63 @@ void configureDependencies() {
       getConditionsByUserId: sl<GetConditionsByUserId>(),
       updateCondition: sl<UpdateCondition>(),
       deleteCondition: sl<DeleteCondition>(),
+    ),
+  );
+
+  //-----------------------------------------------------------------------
+  sl.registerLazySingleton<MedicationsDao>(
+        () => sl<AppDatabase>().medicationsDao,
+  );
+
+  sl.registerLazySingleton<MedicationLocalDataSource>(
+        () => MedicationLocalDataSourceImpl(
+      sl<MedicationsDao>(),
+    ),
+  );
+
+  sl.registerLazySingleton<MedicationRepository>(
+        () => MedicationRepositoryImpl(
+      sl<MedicationLocalDataSource>(),
+    ),
+  );
+
+  sl.registerFactory<CreateMedication>(
+        () => CreateMedication(
+      sl<MedicationRepository>(),
+    ),
+  );
+
+  sl.registerFactory<GetMedicationById>(
+        () => GetMedicationById(
+      sl<MedicationRepository>(),
+    ),
+  );
+
+  sl.registerFactory<GetMedicationsByUserId>(
+        () => GetMedicationsByUserId(
+      sl<MedicationRepository>(),
+    ),
+  );
+
+  sl.registerFactory<UpdateMedication>(
+        () => UpdateMedication(
+      sl<MedicationRepository>(),
+    ),
+  );
+
+  sl.registerFactory<DeleteMedication>(
+        () => DeleteMedication(
+      sl<MedicationRepository>(),
+    ),
+  );
+
+  sl.registerFactory<MedicationBloc>(
+        () => MedicationBloc(
+      sl<CreateMedication>(),
+      sl<GetMedicationById>(),
+      sl<GetMedicationsByUserId>(),
+      sl<UpdateMedication>(),
+      sl<DeleteMedication>(),
     ),
   );
 }

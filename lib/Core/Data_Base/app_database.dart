@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'Dao/conditions_dao.dart';
+import 'Dao/medications_dao.dart';
 import 'Dao/patient_profiles_dao.dart';
 import 'Dao/users_dao.dart';
 import 'Tables/conversations.dart';
@@ -34,6 +35,7 @@ part 'app_database.g.dart';
     UsersDao,
     PatientProfilesDao,
     ConditionsDao,
+    MedicationsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
