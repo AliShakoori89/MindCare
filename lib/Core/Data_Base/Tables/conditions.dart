@@ -2,9 +2,15 @@ import 'package:drift/drift.dart';
 import 'users.dart';
 
 class Conditions extends Table {
-  TextColumn get id => text().references(Users, #id)();
 
-  TextColumn get userId => text()();
+  TextColumn get id => text()();
+
+  TextColumn get userId =>
+      text().references(
+        Users,
+        #id,
+        onDelete: KeyAction.cascade,
+      )();
 
   TextColumn get name => text()();
 

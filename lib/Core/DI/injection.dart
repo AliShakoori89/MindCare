@@ -1,6 +1,13 @@
 import 'package:get_it/get_it.dart';
 import 'package:mind_care/Core/Data_Base/Dao/users_dao.dart';
 import 'package:mind_care/Core/Data_Base/app_database.dart';
+import '../../Features/Conditions/Domain/Repositories/condition_repository.dart';
+import '../../Features/Conditions/Domain/Use_Cases/create_condition.dart';
+import '../../Features/Conditions/Domain/Use_Cases/delete_condition.dart';
+import '../../Features/Conditions/Domain/Use_Cases/get_condition_by_id.dart';
+import '../../Features/Conditions/Domain/Use_Cases/get_conditions_by_user_id.dart';
+import '../../Features/Conditions/Domain/Use_Cases/update_condition.dart';
+import '../../Features/Conditions/Presentation/Bloc/condition_bloc.dart';
 import '../../Features/Patient_Profile/Presentation/Bloc/Patient_Profile_Bloc/Patient_Profile_Bloc.dart';
 import '../../Features/User/Data/Data_Sources/user_local_data_source.dart';
 import '../../Features/User/Data/Data_Sources/user_local_data_source_impl.dart';
@@ -145,6 +152,48 @@ void configureDependencies() {
       sl<GetPatientProfileByUserId>(),
       sl<UpdatePatientProfile>(),
       sl<DeletePatientProfile>(),
+    ),
+  );
+
+  //------------------------------------------------------------------
+
+  sl.registerFactory<CreateCondition>(
+        () => CreateCondition(
+      sl<ConditionRepository>(),
+    ),
+  );
+
+  sl.registerFactory<GetConditionById>(
+        () => GetConditionById(
+      sl<ConditionRepository>(),
+    ),
+  );
+
+  sl.registerFactory<GetConditionsByUserId>(
+        () => GetConditionsByUserId(
+      sl<ConditionRepository>(),
+    ),
+  );
+
+  sl.registerFactory<UpdateCondition>(
+        () => UpdateCondition(
+      sl<ConditionRepository>(),
+    ),
+  );
+
+  sl.registerFactory<DeleteCondition>(
+        () => DeleteCondition(
+      sl<ConditionRepository>(),
+    ),
+  );
+
+  sl.registerFactory<ConditionBloc>(
+        () => ConditionBloc(
+      createCondition: sl<CreateCondition>(),
+      getConditionById: sl<GetConditionById>(),
+      getConditionsByUserId: sl<GetConditionsByUserId>(),
+      updateCondition: sl<UpdateCondition>(),
+      deleteCondition: sl<DeleteCondition>(),
     ),
   );
 }

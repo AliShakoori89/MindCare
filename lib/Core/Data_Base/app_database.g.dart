@@ -1043,9 +1043,6 @@ class $ConditionsTable extends Conditions
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES users (id)',
-    ),
   );
   static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
   @override
@@ -1055,6 +1052,9 @@ class $ConditionsTable extends Conditions
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id) ON DELETE CASCADE',
+    ),
   );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
@@ -6676,6 +6676,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final PatientProfilesDao patientProfilesDao = PatientProfilesDao(
     this as AppDatabase,
   );
+  late final ConditionsDao conditionsDao = ConditionsDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6701,6 +6702,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('patient_profiles', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'users',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('conditions', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -6745,14 +6753,14 @@ final class $$UsersTableReferences
   static MultiTypedResultKey<$ConditionsTable, List<Condition>>
   _conditionsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.conditions,
-    aliasName: 'users__id__conditions__id',
+    aliasName: 'users__id__conditions__user_id',
   );
 
   $$ConditionsTableProcessedTableManager get conditionsRefs {
     final manager = $$ConditionsTableTableManager(
       $_db,
       $_db.conditions,
-    ).filter((f) => f.id.id.sqlEquals($_itemColumn<String>('id')!));
+    ).filter((f) => f.userId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_conditionsRefsTable($_db));
     return ProcessedTableManager(
@@ -6945,7 +6953,7 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
       composer: this,
       getCurrentColumn: (t) => t.id,
       referencedTable: $db.conditions,
-      getReferencedColumn: (t) => t.id,
+      getReferencedColumn: (t) => t.userId,
       builder:
           (
             joinBuilder, {
@@ -7214,7 +7222,7 @@ class $$UsersTableAnnotationComposer
       composer: this,
       getCurrentColumn: (t) => t.id,
       referencedTable: $db.conditions,
-      getReferencedColumn: (t) => t.id,
+      getReferencedColumn: (t) => t.userId,
       builder:
           (
             joinBuilder, {
@@ -7536,10 +7544,10 @@ class $$UsersTableTableManager
                                 table,
                                 p0,
                               ).conditionsRefs,
-                          referencedItemsForCurrentItem: (
-                            item,
-                            referencedItems,
-                          ) => referencedItems.where((e) => e.id == item.id),
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.userId == item.id,
+                              ),
                           typedResults: items,
                         ),
                       if (medicationsRefs)
@@ -8215,17 +8223,17 @@ final class $$ConditionsTableReferences
     extends BaseReferences<_$AppDatabase, $ConditionsTable, Condition> {
   $$ConditionsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $UsersTable _idTable(_$AppDatabase db) =>
-      db.users.createAlias('conditions__id__users__id');
+  static $UsersTable _userIdTable(_$AppDatabase db) =>
+      db.users.createAlias('conditions__user_id__users__id');
 
-  $$UsersTableProcessedTableManager get id {
-    final $_column = $_itemColumn<String>('id')!;
+  $$UsersTableProcessedTableManager get userId {
+    final $_column = $_itemColumn<String>('user_id')!;
 
     final manager = $$UsersTableTableManager(
       $_db,
       $_db.users,
     ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_idTable($_db));
+    final item = $_typedResult.readTableOrNull(_userIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -8242,8 +8250,8 @@ class $$ConditionsTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<String> get userId => $composableBuilder(
-    column: $table.userId,
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8287,10 +8295,10 @@ class $$ConditionsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  $$UsersTableFilterComposer get id {
+  $$UsersTableFilterComposer get userId {
     final $$UsersTableFilterComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.id,
+      getCurrentColumn: (t) => t.userId,
       referencedTable: $db.users,
       getReferencedColumn: (t) => t.id,
       builder:
@@ -8320,8 +8328,8 @@ class $$ConditionsTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<String> get userId => $composableBuilder(
-    column: $table.userId,
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -8365,10 +8373,10 @@ class $$ConditionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  $$UsersTableOrderingComposer get id {
+  $$UsersTableOrderingComposer get userId {
     final $$UsersTableOrderingComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.id,
+      getCurrentColumn: (t) => t.userId,
       referencedTable: $db.users,
       getReferencedColumn: (t) => t.id,
       builder:
@@ -8398,8 +8406,8 @@ class $$ConditionsTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<String> get userId =>
-      $composableBuilder(column: $table.userId, builder: (column) => column);
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
@@ -8429,10 +8437,10 @@ class $$ConditionsTableAnnotationComposer
   GeneratedColumn<DateTime> get deletedAt =>
       $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 
-  $$UsersTableAnnotationComposer get id {
+  $$UsersTableAnnotationComposer get userId {
     final $$UsersTableAnnotationComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.id,
+      getCurrentColumn: (t) => t.userId,
       referencedTable: $db.users,
       getReferencedColumn: (t) => t.id,
       builder:
@@ -8466,7 +8474,7 @@ class $$ConditionsTableTableManager
           $$ConditionsTableUpdateCompanionBuilder,
           (Condition, $$ConditionsTableReferences),
           Condition,
-          PrefetchHooks Function({bool id})
+          PrefetchHooks Function({bool userId})
         > {
   $$ConditionsTableTableManager(_$AppDatabase db, $ConditionsTable table)
     : super(
@@ -8539,7 +8547,7 @@ class $$ConditionsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({id = false}) {
+          prefetchHooksCallback: ({userId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -8559,15 +8567,14 @@ class $$ConditionsTableTableManager
                       dynamic
                     >
                   >(state) {
-                    if (id) {
+                    if (userId) {
                       state = state.withJoin(
                         currentTable: table,
-                        currentColumn: table.id,
-                        referencedTable: $$ConditionsTableReferences._idTable(
-                          db,
-                        ),
+                        currentColumn: table.userId,
+                        referencedTable: $$ConditionsTableReferences
+                            ._userIdTable(db),
                         referencedColumn: $$ConditionsTableReferences
-                            ._idTable(db)
+                            ._userIdTable(db)
                             .id,
                       ) as T;
                     }
@@ -8595,7 +8602,7 @@ typedef $$ConditionsTableProcessedTableManager =
       $$ConditionsTableUpdateCompanionBuilder,
       (Condition, $$ConditionsTableReferences),
       Condition,
-      PrefetchHooks Function({bool id})
+      PrefetchHooks Function({bool userId})
     >;
 typedef $$MedicationsTableCreateCompanionBuilder =
     MedicationsCompanion Function({
