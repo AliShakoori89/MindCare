@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'Dao/patient_profiles_dao.dart';
 import 'Dao/users_dao.dart';
 import 'Tables/conversations.dart';
 import 'Tables/daily_check_ins.dart';
@@ -30,10 +31,12 @@ part 'app_database.g.dart';
   ],
   daos: [
     UsersDao,
+    PatientProfilesDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(openDatabaseConnection());
+  AppDatabase([QueryExecutor? executor])
+      : super(executor ?? openDatabaseConnection());
 
   AppDatabase.forTesting(super.executor);
 

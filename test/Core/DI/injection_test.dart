@@ -1,69 +1,83 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mind_care/Core/Data_Base/Dao/users_dao.dart';
 import 'package:mind_care/Core/Data_Base/app_database.dart';
 import 'package:mind_care/Core/DI/injection.dart';
-import 'package:mind_care/Features/User/Domain/UseCases/create_user.dart';
-import 'package:mind_care/Features/User/Domain/UseCases/delete_user.dart';
-import 'package:mind_care/Features/User/Domain/UseCases/get_all_users.dart';
-import 'package:mind_care/Features/User/Domain/UseCases/get_user_by_id.dart';
-import 'package:mind_care/Features/User/Domain/UseCases/update_user.dart';
-import 'package:mind_care/Features/User/Presentation/Bloc/User_Bloc/user_bloc.dart';
+import 'package:mind_care/Features/Patient_Profile/Data/Data_Sources/patient_profile_local_data_source.dart';
+import 'package:mind_care/Features/Patient_Profile/Domain/Repositories/patient_profile_repository.dart';
+import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/create_patient_profile.dart';
+import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/delete_patient_profile.dart';
+import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/get_patient_profile_by_id.dart';
+import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/get_patient_profile_by_user_id.dart';
+import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/update_patient_profile.dart';
+import 'package:mind_care/Features/Patient_Profile/Presentation/Bloc/Patient_Profile_Bloc/Patient_Profile_Bloc.dart';
 
 void main() {
-  setUp(() {
-    sl.reset();
+  setUp(() async {
+    await sl.reset();
+    configureDependencies();
   });
 
   tearDown(() async {
-    await sl.reset(dispose: true);
+    await sl.reset();
   });
 
-  test('registers AppDatabase and UsersDao', () {
-    configureDependencies();
+  test('PatientProfile dependency graph should resolve', () {
+    expect(
+      sl<AppDatabase>(),
+      isA<AppDatabase>(),
+    );
 
-    expect(sl.isRegistered<AppDatabase>(), isTrue);
-    expect(sl.isRegistered<UsersDao>(), isTrue);
+    expect(
+      sl<PatientProfileLocalDataSource>(),
+      isA<PatientProfileLocalDataSource>(),
+    );
+
+    expect(
+      sl<PatientProfileRepository>(),
+      isA<PatientProfileRepository>(),
+    );
+
+    expect(
+      sl<CreatePatientProfile>(),
+      isA<CreatePatientProfile>(),
+    );
+
+    expect(
+      sl<GetPatientProfileById>(),
+      isA<GetPatientProfileById>(),
+    );
+
+    expect(
+      sl<GetPatientProfileByUserId>(),
+      isA<GetPatientProfileByUserId>(),
+    );
+
+    expect(
+      sl<UpdatePatientProfile>(),
+      isA<UpdatePatientProfile>(),
+    );
+
+    expect(
+      sl<DeletePatientProfile>(),
+      isA<DeletePatientProfile>(),
+    );
+
+    expect(
+      sl<PatientProfileBloc>(),
+      isA<PatientProfileBloc>(),
+    );
   });
 
-  test('resolves AppDatabase', () {
-    configureDependencies();
+  test('PatientProfileRepository should be a lazy singleton', () {
+    final first = sl<PatientProfileRepository>();
+    final second = sl<PatientProfileRepository>();
 
-    final database = sl<AppDatabase>();
-
-    expect(database, isA<AppDatabase>());
+    expect(identical(first, second), isTrue);
   });
 
-  test('resolves UsersDao with AppDatabase dependency', () {
-    configureDependencies();
+  test('PatientProfileBloc should be a factory', () {
+    final first = sl<PatientProfileBloc>();
+    final second = sl<PatientProfileBloc>();
 
-    final usersDao = sl<UsersDao>();
-
-    expect(usersDao, isA<UsersDao>());
-  });
-
-  test('resolves CreateUser with all dependencies', () {
-    configureDependencies();
-
-    final createUser = sl<CreateUser>();
-
-    expect(createUser, isA<CreateUser>());
-  });
-
-  test('resolves all User use cases with dependencies', () {
-    configureDependencies();
-
-    expect(sl<CreateUser>(), isA<CreateUser>());
-    expect(sl<GetUserById>(), isA<GetUserById>());
-    expect(sl<GetAllUsers>(), isA<GetAllUsers>());
-    expect(sl<UpdateUser>(), isA<UpdateUser>());
-    expect(sl<DeleteUser>(), isA<DeleteUser>());
-  });
-
-  test('resolves UserBloc with its dependencies', () {
-    configureDependencies();
-
-    final userBloc = sl<UserBloc>();
-
-    expect(userBloc, isA<UserBloc>());
+    expect(identical(first, second), isFalse);
   });
 }

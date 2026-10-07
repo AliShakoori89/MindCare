@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:mind_care/Core/Data_Base/Dao/users_dao.dart';
 import 'package:mind_care/Core/Data_Base/app_database.dart';
+import '../../Features/Patient_Profile/Presentation/Bloc/Patient_Profile_Bloc/Patient_Profile_Bloc.dart';
 import '../../Features/User/Data/Data_Sources/user_local_data_source.dart';
 import '../../Features/User/Data/Data_Sources/user_local_data_source_impl.dart';
 import '../../Features/User/Data/Repositories/user_repository_impl.dart';
@@ -11,6 +12,17 @@ import '../../Features/User/Domain/UseCases/get_all_users.dart';
 import '../../Features/User/Domain/UseCases/get_user_by_id.dart';
 import '../../Features/User/Domain/UseCases/update_user.dart';
 import '../../Features/User/Presentation/Bloc/User_Bloc/user_bloc.dart';
+import 'package:mind_care/Core/Data_Base/Dao/patient_profiles_dao.dart';
+import 'package:mind_care/Features/Patient_Profile/Data/Data_Sources/patient_profile_local_data_source.dart';
+import 'package:mind_care/Features/Patient_Profile/Data/Data_Sources/patient_profile_local_data_source_impl.dart';
+import 'package:mind_care/Features/Patient_Profile/Data/Repositories/patient_profile_repository_impl.dart';
+import 'package:mind_care/Features/Patient_Profile/Domain/Repositories/patient_profile_repository.dart';
+import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/create_patient_profile.dart';
+import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/delete_patient_profile.dart';
+import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/get_patient_profile_by_id.dart';
+import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/get_patient_profile_by_user_id.dart';
+import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/update_patient_profile.dart';
+
 
 final GetIt sl = GetIt.instance;
 
@@ -73,6 +85,66 @@ void configureDependencies() {
       sl<GetAllUsers>(),
       sl<UpdateUser>(),
       sl<DeleteUser>(),
+    ),
+  );
+
+  //--------------------------------------------------------------------------
+
+  sl.registerLazySingleton<PatientProfilesDao>(
+        () => PatientProfilesDao(
+      sl<AppDatabase>(),
+    ),
+  );
+
+  sl.registerLazySingleton<PatientProfileLocalDataSource>(
+        () => PatientProfileLocalDataSourceImpl(
+      sl<PatientProfilesDao>(),
+    ),
+  );
+
+  sl.registerLazySingleton<PatientProfileRepository>(
+        () => PatientProfileRepositoryImpl(
+      sl<PatientProfileLocalDataSource>(),
+    ),
+  );
+
+  sl.registerFactory<CreatePatientProfile>(
+        () => CreatePatientProfile(
+      sl<PatientProfileRepository>(),
+    ),
+  );
+
+  sl.registerFactory<GetPatientProfileById>(
+        () => GetPatientProfileById(
+      sl<PatientProfileRepository>(),
+    ),
+  );
+
+  sl.registerFactory<GetPatientProfileByUserId>(
+        () => GetPatientProfileByUserId(
+      sl<PatientProfileRepository>(),
+    ),
+  );
+
+  sl.registerFactory<UpdatePatientProfile>(
+        () => UpdatePatientProfile(
+      sl<PatientProfileRepository>(),
+    ),
+  );
+
+  sl.registerFactory<DeletePatientProfile>(
+        () => DeletePatientProfile(
+      sl<PatientProfileRepository>(),
+    ),
+  );
+
+  sl.registerFactory<PatientProfileBloc>(
+        () => PatientProfileBloc(
+      sl<CreatePatientProfile>(),
+      sl<GetPatientProfileById>(),
+      sl<GetPatientProfileByUserId>(),
+      sl<UpdatePatientProfile>(),
+      sl<DeletePatientProfile>(),
     ),
   );
 }
