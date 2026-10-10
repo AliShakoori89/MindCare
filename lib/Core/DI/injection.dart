@@ -18,6 +18,16 @@ import '../../Features/Conversations/Domain/Use_Cases/get_conversation_by_id.dar
 import '../../Features/Conversations/Domain/Use_Cases/get_conversations_by_user_id.dart';
 import '../../Features/Conversations/Domain/Use_Cases/update_conversation.dart';
 import '../../Features/Conversations/Presentation/Bloc/conversation_bloc.dart';
+import '../../Features/Daily_Checkin/Data/Data_Sources/daily_check_in_local_data_source.dart';
+import '../../Features/Daily_Checkin/Data/Repositories/daily_check_in_repository_impl.dart';
+import '../../Features/Daily_Checkin/Domain/Repositories/daily_check_in_repository.dart';
+import '../../Features/Daily_Checkin/Domain/Use_Cases/create_daily_check_in.dart';
+import '../../Features/Daily_Checkin/Domain/Use_Cases/delete_daily_check_in.dart';
+import '../../Features/Daily_Checkin/Domain/Use_Cases/get_daily_check_in_by_id.dart';
+import '../../Features/Daily_Checkin/Domain/Use_Cases/get_daily_check_in_by_user_and_date.dart';
+import '../../Features/Daily_Checkin/Domain/Use_Cases/get_daily_check_ins_by_user_id.dart';
+import '../../Features/Daily_Checkin/Domain/Use_Cases/update_daily_check_in.dart';
+import '../../Features/Daily_Checkin/Presentation/Bloc/Daily_Check_In_Bloc/daily_check_in_bloc.dart';
 import '../../Features/Medications/Data/Data_Sources/medication_local_data_source.dart';
 import '../../Features/Medications/Data/Data_Sources/medication_local_data_source_impl.dart';
 import '../../Features/Medications/Data/Repositories/medication_repository_impl.dart';
@@ -60,6 +70,7 @@ import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/get_patient_p
 import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/update_patient_profile.dart';
 
 import '../Data_Base/Dao/conversations_dao.dart';
+import '../Data_Base/Dao/daily_check_ins_dao.dart';
 import '../Data_Base/Dao/medications_dao.dart';
 import '../Data_Base/Dao/messages_dao.dart';
 
@@ -394,6 +405,73 @@ void configureDependencies() {
       sl<GetMessagesByConversationId>(),
       sl<UpdateMessage>(),
       sl<DeleteMessage>(),
+    ),
+  );
+
+  //------------------------------------------------------------------------
+  // Daily Check-In
+
+  sl.registerLazySingleton<DailyCheckInsDao>(
+        () => sl<AppDatabase>().dailyCheckInsDao,
+  );
+
+  sl.registerLazySingleton<DailyCheckInLocalDataSource>(
+        () => DailyCheckInLocalDataSourceImpl(
+      sl<DailyCheckInsDao>(),
+    ),
+  );
+
+  sl.registerLazySingleton<DailyCheckInRepository>(
+        () => DailyCheckInRepositoryImpl(
+      sl<DailyCheckInLocalDataSource>(),
+    ),
+  );
+
+  sl.registerFactory<CreateDailyCheckIn>(
+        () => CreateDailyCheckIn(
+      sl<DailyCheckInRepository>(),
+    ),
+  );
+
+  sl.registerFactory<GetDailyCheckInById>(
+        () => GetDailyCheckInById(
+      sl<DailyCheckInRepository>(),
+    ),
+  );
+
+  sl.registerFactory<GetDailyCheckInByUserAndDate>(
+        () => GetDailyCheckInByUserAndDate(
+      sl<DailyCheckInRepository>(),
+    ),
+  );
+
+  sl.registerFactory<GetDailyCheckInsByUserId>(
+        () => GetDailyCheckInsByUserId(
+      sl<DailyCheckInRepository>(),
+    ),
+  );
+
+  sl.registerFactory<UpdateDailyCheckIn>(
+        () => UpdateDailyCheckIn(
+      sl<DailyCheckInRepository>(),
+    ),
+  );
+
+  sl.registerFactory<DeleteDailyCheckIn>(
+        () => DeleteDailyCheckIn(
+      sl<DailyCheckInRepository>(),
+    ),
+  );
+
+  sl.registerFactory<DailyCheckInBloc>(
+        () => DailyCheckInBloc(
+      createDailyCheckIn: sl<CreateDailyCheckIn>(),
+      getDailyCheckInById: sl<GetDailyCheckInById>(),
+      getDailyCheckInByUserAndDate:
+      sl<GetDailyCheckInByUserAndDate>(),
+      getDailyCheckInsByUserId: sl<GetDailyCheckInsByUserId>(),
+      updateDailyCheckIn: sl<UpdateDailyCheckIn>(),
+      deleteDailyCheckIn: sl<DeleteDailyCheckIn>(),
     ),
   );
 }

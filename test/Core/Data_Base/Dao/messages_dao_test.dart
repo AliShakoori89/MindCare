@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mind_care/Core/Data_Base/Dao/conversations_dao.dart';
@@ -56,21 +55,6 @@ void main() {
     );
   }
 
-  ConversationsCompanion buildConversation({
-    String id = conversationId,
-    String userId = userId,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  }) {
-    final now = DateTime(2026, 10, 1);
-
-    return ConversationsCompanion.insert(
-      id: id,
-      userId: userId,
-      createdAt: createdAt ?? now,
-      updatedAt: updatedAt ?? now,
-    );
-  }
 
   MessagesCompanion buildMessage({
     String id = 'message-1',
