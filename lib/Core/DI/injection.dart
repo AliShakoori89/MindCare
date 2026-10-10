@@ -28,6 +28,7 @@ import '../../Features/Daily_Checkin/Domain/Use_Cases/get_daily_check_in_by_user
 import '../../Features/Daily_Checkin/Domain/Use_Cases/get_daily_check_ins_by_user_id.dart';
 import '../../Features/Daily_Checkin/Domain/Use_Cases/update_daily_check_in.dart';
 import '../../Features/Daily_Checkin/Presentation/Bloc/Daily_Check_In_Bloc/daily_check_in_bloc.dart';
+import '../../Features/Journal/Presentation/Bloc/journal_Bloc/journal_bloc.dart';
 import '../../Features/Medications/Data/Data_Sources/medication_local_data_source.dart';
 import '../../Features/Medications/Data/Data_Sources/medication_local_data_source_impl.dart';
 import '../../Features/Medications/Data/Repositories/medication_repository_impl.dart';
@@ -68,12 +69,19 @@ import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/delete_patien
 import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/get_patient_profile_by_id.dart';
 import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/get_patient_profile_by_user_id.dart';
 import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/update_patient_profile.dart';
-
 import '../Data_Base/Dao/conversations_dao.dart';
 import '../Data_Base/Dao/daily_check_ins_dao.dart';
+import '../Data_Base/Dao/journal_entries_dao.dart';
 import '../Data_Base/Dao/medications_dao.dart';
 import '../Data_Base/Dao/messages_dao.dart';
-
+import 'package:mind_care/Features/Journal/Data/Data_Sources/journal_local_data_source.dart';
+import 'package:mind_care/Features/Journal/Data/Repositories/journal_repository_impl.dart';
+import 'package:mind_care/Features/Journal/Domain/Repositories/journal_repository.dart';
+import 'package:mind_care/Features/Journal/Domain/Use_Cases/create_journal_entry.dart';
+import 'package:mind_care/Features/Journal/Domain/Use_Cases/delete_journal_entry.dart';
+import 'package:mind_care/Features/Journal/Domain/Use_Cases/get_journal_entries_by_user_id.dart';
+import 'package:mind_care/Features/Journal/Domain/Use_Cases/get_journal_entry_by_id.dart';
+import 'package:mind_care/Features/Journal/Domain/Use_Cases/update_journal_entry.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -83,54 +91,28 @@ void configureDependencies() {
     dispose: (database) => database.close(),
   );
 
-  sl.registerLazySingleton<UsersDao>(
-        () => UsersDao(sl<AppDatabase>()),
-  );
+  sl.registerLazySingleton<UsersDao>(() => UsersDao(sl<AppDatabase>()));
 
   sl.registerLazySingleton<UserLocalDataSource>(
-        () => UserLocalDataSourceImpl(
-      sl<UsersDao>(),
-    ),
+    () => UserLocalDataSourceImpl(sl<UsersDao>()),
   );
 
   sl.registerLazySingleton<UserRepository>(
-        () => UserRepositoryImpl(
-      sl<UserLocalDataSource>(),
-    ),
+    () => UserRepositoryImpl(sl<UserLocalDataSource>()),
   );
 
-  sl.registerFactory<CreateUser>(
-        () => CreateUser(
-      sl<UserRepository>(),
-    ),
-  );
+  sl.registerFactory<CreateUser>(() => CreateUser(sl<UserRepository>()));
 
-  sl.registerFactory<GetUserById>(
-        () => GetUserById(
-      sl<UserRepository>(),
-    ),
-  );
+  sl.registerFactory<GetUserById>(() => GetUserById(sl<UserRepository>()));
 
-  sl.registerFactory<GetAllUsers>(
-        () => GetAllUsers(
-      sl<UserRepository>(),
-    ),
-  );
+  sl.registerFactory<GetAllUsers>(() => GetAllUsers(sl<UserRepository>()));
 
-  sl.registerFactory<UpdateUser>(
-        () => UpdateUser(
-      sl<UserRepository>(),
-    ),
-  );
+  sl.registerFactory<UpdateUser>(() => UpdateUser(sl<UserRepository>()));
 
-  sl.registerFactory<DeleteUser>(
-        () => DeleteUser(
-      sl<UserRepository>(),
-    ),
-  );
+  sl.registerFactory<DeleteUser>(() => DeleteUser(sl<UserRepository>()));
 
   sl.registerFactory<UserBloc>(
-        () => UserBloc(
+    () => UserBloc(
       sl<CreateUser>(),
       sl<GetUserById>(),
       sl<GetAllUsers>(),
@@ -142,55 +124,39 @@ void configureDependencies() {
   //--------------------------------------------------------------------------
 
   sl.registerLazySingleton<PatientProfilesDao>(
-        () => PatientProfilesDao(
-      sl<AppDatabase>(),
-    ),
+    () => PatientProfilesDao(sl<AppDatabase>()),
   );
 
   sl.registerLazySingleton<PatientProfileLocalDataSource>(
-        () => PatientProfileLocalDataSourceImpl(
-      sl<PatientProfilesDao>(),
-    ),
+    () => PatientProfileLocalDataSourceImpl(sl<PatientProfilesDao>()),
   );
 
   sl.registerLazySingleton<PatientProfileRepository>(
-        () => PatientProfileRepositoryImpl(
-      sl<PatientProfileLocalDataSource>(),
-    ),
+    () => PatientProfileRepositoryImpl(sl<PatientProfileLocalDataSource>()),
   );
 
   sl.registerFactory<CreatePatientProfile>(
-        () => CreatePatientProfile(
-      sl<PatientProfileRepository>(),
-    ),
+    () => CreatePatientProfile(sl<PatientProfileRepository>()),
   );
 
   sl.registerFactory<GetPatientProfileById>(
-        () => GetPatientProfileById(
-      sl<PatientProfileRepository>(),
-    ),
+    () => GetPatientProfileById(sl<PatientProfileRepository>()),
   );
 
   sl.registerFactory<GetPatientProfileByUserId>(
-        () => GetPatientProfileByUserId(
-      sl<PatientProfileRepository>(),
-    ),
+    () => GetPatientProfileByUserId(sl<PatientProfileRepository>()),
   );
 
   sl.registerFactory<UpdatePatientProfile>(
-        () => UpdatePatientProfile(
-      sl<PatientProfileRepository>(),
-    ),
+    () => UpdatePatientProfile(sl<PatientProfileRepository>()),
   );
 
   sl.registerFactory<DeletePatientProfile>(
-        () => DeletePatientProfile(
-      sl<PatientProfileRepository>(),
-    ),
+    () => DeletePatientProfile(sl<PatientProfileRepository>()),
   );
 
   sl.registerFactory<PatientProfileBloc>(
-        () => PatientProfileBloc(
+    () => PatientProfileBloc(
       sl<CreatePatientProfile>(),
       sl<GetPatientProfileById>(),
       sl<GetPatientProfileByUserId>(),
@@ -202,37 +168,27 @@ void configureDependencies() {
   //------------------------------------------------------------------
 
   sl.registerFactory<CreateCondition>(
-        () => CreateCondition(
-      sl<ConditionRepository>(),
-    ),
+    () => CreateCondition(sl<ConditionRepository>()),
   );
 
   sl.registerFactory<GetConditionById>(
-        () => GetConditionById(
-      sl<ConditionRepository>(),
-    ),
+    () => GetConditionById(sl<ConditionRepository>()),
   );
 
   sl.registerFactory<GetConditionsByUserId>(
-        () => GetConditionsByUserId(
-      sl<ConditionRepository>(),
-    ),
+    () => GetConditionsByUserId(sl<ConditionRepository>()),
   );
 
   sl.registerFactory<UpdateCondition>(
-        () => UpdateCondition(
-      sl<ConditionRepository>(),
-    ),
+    () => UpdateCondition(sl<ConditionRepository>()),
   );
 
   sl.registerFactory<DeleteCondition>(
-        () => DeleteCondition(
-      sl<ConditionRepository>(),
-    ),
+    () => DeleteCondition(sl<ConditionRepository>()),
   );
 
   sl.registerFactory<ConditionBloc>(
-        () => ConditionBloc(
+    () => ConditionBloc(
       createCondition: sl<CreateCondition>(),
       getConditionById: sl<GetConditionById>(),
       getConditionsByUserId: sl<GetConditionsByUserId>(),
@@ -243,53 +199,39 @@ void configureDependencies() {
 
   //-----------------------------------------------------------------------
   sl.registerLazySingleton<MedicationsDao>(
-        () => sl<AppDatabase>().medicationsDao,
+    () => sl<AppDatabase>().medicationsDao,
   );
 
   sl.registerLazySingleton<MedicationLocalDataSource>(
-        () => MedicationLocalDataSourceImpl(
-      sl<MedicationsDao>(),
-    ),
+    () => MedicationLocalDataSourceImpl(sl<MedicationsDao>()),
   );
 
   sl.registerLazySingleton<MedicationRepository>(
-        () => MedicationRepositoryImpl(
-      sl<MedicationLocalDataSource>(),
-    ),
+    () => MedicationRepositoryImpl(sl<MedicationLocalDataSource>()),
   );
 
   sl.registerFactory<CreateMedication>(
-        () => CreateMedication(
-      sl<MedicationRepository>(),
-    ),
+    () => CreateMedication(sl<MedicationRepository>()),
   );
 
   sl.registerFactory<GetMedicationById>(
-        () => GetMedicationById(
-      sl<MedicationRepository>(),
-    ),
+    () => GetMedicationById(sl<MedicationRepository>()),
   );
 
   sl.registerFactory<GetMedicationsByUserId>(
-        () => GetMedicationsByUserId(
-      sl<MedicationRepository>(),
-    ),
+    () => GetMedicationsByUserId(sl<MedicationRepository>()),
   );
 
   sl.registerFactory<UpdateMedication>(
-        () => UpdateMedication(
-      sl<MedicationRepository>(),
-    ),
+    () => UpdateMedication(sl<MedicationRepository>()),
   );
 
   sl.registerFactory<DeleteMedication>(
-        () => DeleteMedication(
-      sl<MedicationRepository>(),
-    ),
+    () => DeleteMedication(sl<MedicationRepository>()),
   );
 
   sl.registerFactory<MedicationBloc>(
-        () => MedicationBloc(
+    () => MedicationBloc(
       sl<CreateMedication>(),
       sl<GetMedicationById>(),
       sl<GetMedicationsByUserId>(),
@@ -301,53 +243,39 @@ void configureDependencies() {
   //------------------------------------------------------------
 
   sl.registerLazySingleton<ConversationsDao>(
-        () => sl<AppDatabase>().conversationsDao,
+    () => sl<AppDatabase>().conversationsDao,
   );
 
   sl.registerLazySingleton<ConversationLocalDataSource>(
-        () => ConversationLocalDataSourceImpl(
-      sl<ConversationsDao>(),
-    ),
+    () => ConversationLocalDataSourceImpl(sl<ConversationsDao>()),
   );
 
   sl.registerLazySingleton<ConversationRepository>(
-        () => ConversationRepositoryImpl(
-      sl<ConversationLocalDataSource>(),
-    ),
+    () => ConversationRepositoryImpl(sl<ConversationLocalDataSource>()),
   );
 
   sl.registerFactory<CreateConversation>(
-        () => CreateConversation(
-      sl<ConversationRepository>(),
-    ),
+    () => CreateConversation(sl<ConversationRepository>()),
   );
 
   sl.registerFactory<GetConversationById>(
-        () => GetConversationById(
-      sl<ConversationRepository>(),
-    ),
+    () => GetConversationById(sl<ConversationRepository>()),
   );
 
   sl.registerFactory<GetConversationsByUserId>(
-        () => GetConversationsByUserId(
-      sl<ConversationRepository>(),
-    ),
+    () => GetConversationsByUserId(sl<ConversationRepository>()),
   );
 
   sl.registerFactory<UpdateConversation>(
-        () => UpdateConversation(
-      sl<ConversationRepository>(),
-    ),
+    () => UpdateConversation(sl<ConversationRepository>()),
   );
 
   sl.registerFactory<ArchiveConversation>(
-        () => ArchiveConversation(
-      sl<ConversationRepository>(),
-    ),
+    () => ArchiveConversation(sl<ConversationRepository>()),
   );
 
   sl.registerFactory<ConversationBloc>(
-        () => ConversationBloc(
+    () => ConversationBloc(
       sl<CreateConversation>(),
       sl<GetConversationById>(),
       sl<GetConversationsByUserId>(),
@@ -358,48 +286,26 @@ void configureDependencies() {
 
   //------------------------------------------------------------------------
 
-  sl.registerLazySingleton<MessagesDao>(
-        () => MessagesDao(sl<AppDatabase>()),
-  );
+  sl.registerLazySingleton<MessagesDao>(() => MessagesDao(sl<AppDatabase>()));
 
   sl.registerLazySingleton<MessageRepository>(
-        () => MessageRepositoryImpl(
-      sl<MessageLocalDataSource>(),
-    ),
+    () => MessageRepositoryImpl(sl<MessageLocalDataSource>()),
   );
 
-  sl.registerFactory(
-        () => CreateMessage(
-      sl<MessageRepository>(),
-    ),
-  );
+  sl.registerFactory(() => CreateMessage(sl<MessageRepository>()));
+
+  sl.registerFactory(() => GetMessageById(sl<MessageRepository>()));
 
   sl.registerFactory(
-        () => GetMessageById(
-      sl<MessageRepository>(),
-    ),
+    () => GetMessagesByConversationId(sl<MessageRepository>()),
   );
 
-  sl.registerFactory(
-        () => GetMessagesByConversationId(
-      sl<MessageRepository>(),
-    ),
-  );
+  sl.registerFactory(() => UpdateMessage(sl<MessageRepository>()));
+
+  sl.registerFactory(() => DeleteMessage(sl<MessageRepository>()));
 
   sl.registerFactory(
-        () => UpdateMessage(
-      sl<MessageRepository>(),
-    ),
-  );
-
-  sl.registerFactory(
-        () => DeleteMessage(
-      sl<MessageRepository>(),
-    ),
-  );
-
-  sl.registerFactory(
-        () => MessageBloc(
+    () => MessageBloc(
       sl<CreateMessage>(),
       sl<GetMessageById>(),
       sl<GetMessagesByConversationId>(),
@@ -412,66 +318,88 @@ void configureDependencies() {
   // Daily Check-In
 
   sl.registerLazySingleton<DailyCheckInsDao>(
-        () => sl<AppDatabase>().dailyCheckInsDao,
+    () => sl<AppDatabase>().dailyCheckInsDao,
   );
 
   sl.registerLazySingleton<DailyCheckInLocalDataSource>(
-        () => DailyCheckInLocalDataSourceImpl(
-      sl<DailyCheckInsDao>(),
-    ),
+    () => DailyCheckInLocalDataSourceImpl(sl<DailyCheckInsDao>()),
   );
 
   sl.registerLazySingleton<DailyCheckInRepository>(
-        () => DailyCheckInRepositoryImpl(
-      sl<DailyCheckInLocalDataSource>(),
-    ),
+    () => DailyCheckInRepositoryImpl(sl<DailyCheckInLocalDataSource>()),
   );
 
   sl.registerFactory<CreateDailyCheckIn>(
-        () => CreateDailyCheckIn(
-      sl<DailyCheckInRepository>(),
-    ),
+    () => CreateDailyCheckIn(sl<DailyCheckInRepository>()),
   );
 
   sl.registerFactory<GetDailyCheckInById>(
-        () => GetDailyCheckInById(
-      sl<DailyCheckInRepository>(),
-    ),
+    () => GetDailyCheckInById(sl<DailyCheckInRepository>()),
   );
 
   sl.registerFactory<GetDailyCheckInByUserAndDate>(
-        () => GetDailyCheckInByUserAndDate(
-      sl<DailyCheckInRepository>(),
-    ),
+    () => GetDailyCheckInByUserAndDate(sl<DailyCheckInRepository>()),
   );
 
   sl.registerFactory<GetDailyCheckInsByUserId>(
-        () => GetDailyCheckInsByUserId(
-      sl<DailyCheckInRepository>(),
-    ),
+    () => GetDailyCheckInsByUserId(sl<DailyCheckInRepository>()),
   );
 
   sl.registerFactory<UpdateDailyCheckIn>(
-        () => UpdateDailyCheckIn(
-      sl<DailyCheckInRepository>(),
-    ),
+    () => UpdateDailyCheckIn(sl<DailyCheckInRepository>()),
   );
 
   sl.registerFactory<DeleteDailyCheckIn>(
-        () => DeleteDailyCheckIn(
-      sl<DailyCheckInRepository>(),
-    ),
+    () => DeleteDailyCheckIn(sl<DailyCheckInRepository>()),
   );
 
   sl.registerFactory<DailyCheckInBloc>(
-        () => DailyCheckInBloc(
+    () => DailyCheckInBloc(
       createDailyCheckIn: sl<CreateDailyCheckIn>(),
       getDailyCheckInById: sl<GetDailyCheckInById>(),
-      getDailyCheckInByUserAndDate:
-      sl<GetDailyCheckInByUserAndDate>(),
+      getDailyCheckInByUserAndDate: sl<GetDailyCheckInByUserAndDate>(),
       getDailyCheckInsByUserId: sl<GetDailyCheckInsByUserId>(),
       updateDailyCheckIn: sl<UpdateDailyCheckIn>(),
       deleteDailyCheckIn: sl<DeleteDailyCheckIn>(),
+    ),
+  );
+
+  //------------------------------------------------------------------
+
+  // Journal DAO
+  sl.registerLazySingleton<JournalEntriesDao>(
+    () => JournalEntriesDao(sl<AppDatabase>()),
+  );
+
+  // Journal Data Source
+  sl.registerLazySingleton<JournalLocalDataSource>(
+    () => JournalLocalDataSourceImpl(sl<JournalEntriesDao>()),
+  );
+
+  // Journal Repository
+  sl.registerLazySingleton<JournalRepository>(
+    () => JournalRepositoryImpl(sl<JournalLocalDataSource>()),
+  );
+
+  // Journal Use Cases
+  sl.registerFactory(() => CreateJournalEntry(sl<JournalRepository>()));
+
+  sl.registerFactory(() => GetJournalEntryById(sl<JournalRepository>()));
+
+  sl.registerFactory(() => GetJournalEntriesByUserId(sl<JournalRepository>()));
+
+  sl.registerFactory(() => UpdateJournalEntry(sl<JournalRepository>()));
+
+  sl.registerFactory(() => DeleteJournalEntry(sl<JournalRepository>()));
+
+  // Journal BLoC
+  sl.registerFactory(
+    () => JournalBloc(
+      createJournalEntry: sl<CreateJournalEntry>(),
+      getJournalEntryById: sl<GetJournalEntryById>(),
+      getJournalEntriesByUserId: sl<GetJournalEntriesByUserId>(),
+      updateJournalEntry: sl<UpdateJournalEntry>(),
+      deleteJournalEntry: sl<DeleteJournalEntry>(),
     ),
   );
 }
