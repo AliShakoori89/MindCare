@@ -1,8 +1,16 @@
 
 import 'package:flutter/material.dart';
+import '../../../Ai_Assistant/Presentation/Pages/aI_assistant.dart';
+import '../../../Conditions/Presentation/Pages/conditions_page.dart';
 import '../../../Daily_Checkin/Presentation/Mock/mock_daily_check_in_store.dart';
 import '../../../Daily_Checkin/Presentation/Pages/daily_check_in_page.dart';
+import '../../../Documents/Presentation/Pages/medical_documents_page.dart';
+import '../../../Insights/Presentation/Pages/health_insights_page.dart';
+import '../../../Journal/Presentation/Pages/journal_page.dart';
 import '../../../Medications/Presentation/Pages/medications_page.dart';
+import '../../../Patient_Profile/Presentation/Pages/patient_profile.dart';
+import '../../../My_Health/Presentation/Pages/my_health_page.dart';
+import 'Component/chang_date_format.dart';
 
 class HomeDashboardPage extends StatefulWidget {
   const HomeDashboardPage({super.key});
@@ -19,9 +27,14 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
 
 
   Future<void> _openDailyCheckIn() async {
+    final existingCheckIn =
+        MockDailyCheckInStore.instance.today;
+
     await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
-        builder: (_) => const DailyCheckInPage(),
+        builder: (_) => DailyCheckInPage(
+          existingCheckIn: existingCheckIn,
+        ),
       ),
     );
 
@@ -30,44 +43,14 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
     setState(() {});
   }
 
-
-  void _showComingSoon(String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$feature به‌زودی در دسترس خواهد بود.'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final pages = [
       _buildHome(),
-      const _SectionPage(
-        title: 'روند سلامت',
-        subtitle: 'تغییرات سلامتت را در طول زمان دنبال کن.',
-        icon: Icons.insights_outlined,
-        items: ['گزارش هفتگی', 'تاریخچه حال روزانه', 'خلاصه ماهانه'],
-      ),
-      const _SectionPage(
-        title: 'دستیار هوشمند',
-        subtitle: 'برای درک بهتر اطلاعات سلامتت آماده‌ای؟',
-        icon: Icons.smart_toy_outlined,
-        items: ['گفت‌وگو درباره سلامت', 'سؤالات متداول', 'گفت‌وگوهای اخیر'],
-      ),
-      const _SectionPage(
-        title: 'سلامت من',
-        subtitle: 'اطلاعات سلامتت را یک‌جا مدیریت کن.',
-        icon: Icons.health_and_safety_outlined,
-        items: ['شرایط پزشکی', 'داروهای من', 'مدارک پزشکی'],
-      ),
-      const _SectionPage(
-        title: 'پروفایل من',
-        subtitle: 'اطلاعات شخصی و ترجیحاتت را مدیریت کن.',
-        icon: Icons.person_outline,
-        items: ['اطلاعات شخصی', 'اطلاعات تماس اضطراری', 'تنظیمات'],
-      ),
+      const HealthInsightsPage(),
+      const AiAssistantPage(),
+      const MyHealthPage(),
+      const PatientProfilePage(),
     ];
 
     return Directionality(
@@ -83,7 +66,7 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
         bottomNavigationBar: NavigationBar(
           selectedIndex: _selectedIndex,
           backgroundColor: Colors.white,
-          indicatorColor: _primaryColor.withValues(alpha: 0.13),
+          indicatorColor: _primaryColor.withValues(alpha: 0.2),
           onDestinationSelected: (index) {
             setState(() => _selectedIndex = index);
           },
@@ -120,7 +103,9 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
   }
 
   Widget _buildHome() {
-    final latestCheckIn = MockDailyCheckInStore.instance.latest;
+
+    final todayCheckIn  = MockDailyCheckInStore.instance.today;
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
       children: [
@@ -131,16 +116,25 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'سلام، خوش اومدی 👋',
+                    'سلام، روزت آرام 👋',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    'امروز چطوری؟',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.black54,
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        left: 10,
+                        right: 10,
+                        top: 5,
+                        bottom: 5,
+                      ),
+                      child: Text(getTodayPersianDate()),
                     ),
                   ),
                 ],
@@ -173,25 +167,44 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
                   Icon(Icons.wb_sunny_outlined, color: Colors.white, size: 28),
                   SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      'حال امروزت رو ثبت کن',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 19,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          MockDailyCheckInStore.instance.hasTodayCheckIn
+                              ? 'ویرایش حال امروز'
+                              : 'ارزیابی روزانه',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          MockDailyCheckInStore.instance.hasTodayCheckIn
+                              ? ''
+                              : 'چند ثانیه برای خودت وقت بذار',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 19,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              const Text(
-                'چند دقیقه برای خودت وقت بذار و حال امروزت رو ثبت کن.',
+              Text(
+                MockDailyCheckInStore.instance.hasTodayCheckIn
+                    ? 'حال امروزت ثبت شده؛ اگر لازم است آن را تغییر بده.'
+                    : 'احساس و سطح انرژی امروزت رو ثبت کن تا الگوی آرامش، تاب آوری و خواب عمیقت با دقت شکل بگیره',
                 style: TextStyle(
                   color: Colors.white,
                   height: 1.7,
@@ -206,7 +219,10 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
                     backgroundColor: Colors.white,
                     foregroundColor: _primaryColor,
                   ),
-                  child: const Text('شروع ثبت روزانه'),
+                  child: Text(MockDailyCheckInStore.instance.hasTodayCheckIn
+                    ? 'بروز زسانی حال روزانه.'
+                    : 'شروع ثبت روزانه',
+                  ),
                 ),
               ),
             ],
@@ -222,7 +238,7 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
               child: _MetricCard(
                 icon: Icons.mood_outlined,
                 title: 'حال امروز',
-                value: latestCheckIn?.moodLabel ?? 'ثبت نشده',
+                value: todayCheckIn?.moodLabel ?? 'ثبت نشده',
                 color: const Color(0xFF7C5CE7),
               ),
             ),
@@ -254,7 +270,15 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
               title: 'دفترچه یادداشت',
               subtitle: 'ثبت احساسات و افکار',
               color: const Color(0xFF7C5CE7),
-              onTap: () => _showComingSoon('دفترچه یادداشت'),
+              onTap: (){
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => JournalPage(
+                      userId: '10',
+                    ),
+                  ),
+                );
+              },
             ),
             _QuickActionCard(
               icon: Icons.medication_outlined,
@@ -270,11 +294,30 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
               },
             ),
             _QuickActionCard(
+              icon: Icons.medical_information_outlined,
+              title: 'شرایط پزشکی',
+              subtitle: 'بیماری‌ها و شرایط',
+              color: const Color(0xFFE05A5A),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const ConditionsPage(),
+                  ),
+                );
+              },
+            ),
+            _QuickActionCard(
               icon: Icons.description_outlined,
               title: 'مدارک پزشکی',
               subtitle: 'پرونده‌های سلامت',
               color: const Color(0xFF2588D8),
-              onTap: () => setState(() => _selectedIndex = 3),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const MedicalDocumentsPage(),
+                  ),
+                );
+              },
             ),
             _QuickActionCard(
               icon: Icons.auto_awesome_outlined,
@@ -286,8 +329,6 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
           ],
         ),
         const SizedBox(height: 28),
-
-        _sectionTitle('یادآوری برای خودت'),
         const SizedBox(height: 14),
         Container(
           padding: const EdgeInsets.all(16),
@@ -296,25 +337,28 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
           ),
-          child: const Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.spa_outlined, color: _primaryColor, size: 30),
-              SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'مراقبت از خودت رو فراموش نکن',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      'استراحت کوتاه هم می‌تونه بخشی از مراقبت روزانه باشه.',
-                      style: TextStyle(color: Colors.black54, height: 1.6),
-                    ),
-                  ],
+              Text('تأمل روزانه'),
+              _sectionTitle('پذیرش آرام آنچه در جریان است'),
+              Container(
+                decoration:BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(10),
                 ),
+                width: double.infinity,
+                margin: EdgeInsets.only(top: 10),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Expanded(
+                      child: Text(
+                        '«آرامش به این معنا نیست که طوفانی در کار نباشد، بلکه به این معناست که در دل طوفان، لنگرگاهی استوار در درون خود داشته باشی.»',
+                        style: TextStyle(color: Colors.black54, height: 1.6),
+                        textAlign: TextAlign.justify,
+                      )
+                  ),
+                )
               ),
             ],
           ),
@@ -420,73 +464,6 @@ class _QuickActionCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _SectionPage extends StatelessWidget {
-  const _SectionPage({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.items,
-  });
-
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final List<String> items;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        const SizedBox(height: 16),
-        Icon(icon, size: 54, color: const Color(0xFF4CA30D)),
-        const SizedBox(height: 16),
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          subtitle,
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.black54, height: 1.7),
-        ),
-        const SizedBox(height: 28),
-        ...items.map(
-              (item) => Card(
-            color: Colors.white,
-            elevation: 0,
-            margin: const EdgeInsets.only(bottom: 12),
-            child: ListTile(
-              leading: const CircleAvatar(
-                backgroundColor: Color(0xFFEAF5E2),
-                child: Icon(
-                  Icons.arrow_back_ios_new,
-                  color: Color(0xFF4CA30D),
-                  size: 17,
-                ),
-              ),
-              title: Text(item),
-              trailing: const Icon(Icons.chevron_left),
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('$item به‌زودی در دسترس خواهد بود.'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

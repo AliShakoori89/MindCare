@@ -1,10 +1,13 @@
 
 import 'package:flutter/material.dart';
-
 import '../Mock/mock_daily_check_in_store.dart';
 
 class DailyCheckInPage extends StatefulWidget {
-  const DailyCheckInPage({super.key});
+  const DailyCheckInPage({
+    super.key,
+    this.existingCheckIn,});
+
+  final MockDailyCheckIn? existingCheckIn;
 
   @override
   State<DailyCheckInPage> createState() => _DailyCheckInPageState();
@@ -29,6 +32,22 @@ class _DailyCheckInPageState extends State<DailyCheckInPage> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+
+    final checkIn = widget.existingCheckIn;
+
+    if (checkIn == null) return;
+
+    _mood = checkIn.mood;
+    _energy = checkIn.energy;
+    _stress = checkIn.stress;
+    _sleepQuality = checkIn.sleepQuality;
+    _sleepDuration = checkIn.sleepDuration;
+    _noteController.text = checkIn.note;
+  }
+
+  @override
   void dispose() {
     _noteController.dispose();
     super.dispose();
@@ -46,28 +65,38 @@ class _DailyCheckInPageState extends State<DailyCheckInPage> {
       return;
     }
 
-    MockDailyCheckInStore.instance.save(
-      MockDailyCheckIn(
-        mood: _mood!,
-        energy: _energy,
-        stress: _stress,
-        sleepQuality: _sleepQuality,
-        sleepDuration: _sleepDuration,
-        note: _noteController.text.trim(),
-        createdAt: DateTime.now(),
-      ),
+    final store = MockDailyCheckInStore.instance;
+
+    final checkIn = MockDailyCheckIn(
+      mood: _mood!,
+      energy: _energy,
+      stress: _stress,
+      sleepQuality: _sleepQuality,
+      sleepDuration: _sleepDuration,
+      note: _noteController.text.trim(),
+      createdAt:
+      widget.existingCheckIn?.createdAt ?? DateTime.now(),
     );
 
+    if (widget.existingCheckIn != null) {
+      store.update(checkIn);
+    } else {
+      store.save(checkIn);
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('حال امروزت ثبت شد.'),
+      SnackBar(
+        content: Text(
+          widget.existingCheckIn != null
+              ? 'حال امروزت به‌روزرسانی شد.'
+              : 'حال امروزت ثبت شد.',
+        ),
         behavior: SnackBarBehavior.floating,
       ),
     );
 
     Navigator.of(context).pop(true);
   }
-
 
   @override
   Widget build(BuildContext context) {

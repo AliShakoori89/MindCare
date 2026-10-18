@@ -1,4 +1,3 @@
-
 class MockDailyCheckIn {
   const MockDailyCheckIn({
     required this.mood,
@@ -34,6 +33,26 @@ class MockDailyCheckIn {
         return 'ثبت نشده';
     }
   }
+
+  MockDailyCheckIn copyWith({
+    int? mood,
+    int? energy,
+    int? stress,
+    int? sleepQuality,
+    double? sleepDuration,
+    String? note,
+    DateTime? createdAt,
+  }) {
+    return MockDailyCheckIn(
+      mood: mood ?? this.mood,
+      energy: energy ?? this.energy,
+      stress: stress ?? this.stress,
+      sleepQuality: sleepQuality ?? this.sleepQuality,
+      sleepDuration: sleepDuration ?? this.sleepDuration,
+      note: note ?? this.note,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
 }
 
 class MockDailyCheckInStore {
@@ -42,11 +61,33 @@ class MockDailyCheckInStore {
   static final MockDailyCheckInStore instance =
   MockDailyCheckInStore._();
 
-  MockDailyCheckIn? _latest;
+  MockDailyCheckIn? _today;
 
-  MockDailyCheckIn? get latest => _latest;
+  MockDailyCheckIn? get today => _today;
+
+  bool get hasTodayCheckIn {
+    if (_today == null) return false;
+
+    return _isSameDay(_today!.createdAt, DateTime.now());
+  }
 
   void save(MockDailyCheckIn checkIn) {
-    _latest = checkIn;
+    _today = checkIn;
+  }
+
+  void update(MockDailyCheckIn checkIn) {
+    if (!hasTodayCheckIn) {
+      throw StateError(
+        'There is no daily check-in for today.',
+      );
+    }
+
+    _today = checkIn;
+  }
+
+  bool _isSameDay(DateTime first, DateTime second) {
+    return first.year == second.year &&
+        first.month == second.month &&
+        first.day == second.day;
   }
 }
