@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-import '../../../Ai_Assistant/Presentation/Pages/aI_assistant.dart';
+import '../../../Ai_Assistant/Presentation/Pages/ai_assistant.dart';
 import '../../../Conditions/Presentation/Pages/conditions_page.dart';
 import '../../../Daily_Checkin/Presentation/Mock/mock_daily_check_in_store.dart';
 import '../../../Daily_Checkin/Presentation/Pages/daily_check_in_page.dart';

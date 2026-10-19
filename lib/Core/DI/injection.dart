@@ -1,6 +1,20 @@
+import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:mind_care/Core/Data_Base/Dao/users_dao.dart';
 import 'package:mind_care/Core/Data_Base/app_database.dart';
+import '../../Features/Authentication/Data/Data_Sources/auth_local_data_source.dart';
+import '../../Features/Authentication/Data/Data_Sources/auth_local_data_source_impl.dart';
+import '../../Features/Authentication/Data/Data_Sources/auth_remote_data_source.dart';
+import '../../Features/Authentication/Data/Data_Sources/auth_remote_data_source_impl.dart';
+import '../../Features/Authentication/Data/Repositories/auth_repository_impl.dart';
+import '../../Features/Authentication/Domain/Repositories/auth_repository.dart';
+import '../../Features/Authentication/Domain/Use_Cases/get_current_session.dart';
+import '../../Features/Authentication/Domain/Use_Cases/logout.dart';
+import '../../Features/Authentication/Domain/Use_Cases/refresh_session.dart';
+import '../../Features/Authentication/Domain/Use_Cases/send_otp.dart';
+import '../../Features/Authentication/Domain/Use_Cases/verify_otp.dart';
+import '../../Features/Authentication/Presentation/Bloc/auth_bloc.dart';
 import '../../Features/Conditions/Domain/Repositories/condition_repository.dart';
 import '../../Features/Conditions/Domain/Use_Cases/create_condition.dart';
 import '../../Features/Conditions/Domain/Use_Cases/delete_condition.dart';
@@ -83,9 +97,34 @@ import 'package:mind_care/Features/Journal/Domain/Use_Cases/get_journal_entries_
 import 'package:mind_care/Features/Journal/Domain/Use_Cases/get_journal_entry_by_id.dart';
 import 'package:mind_care/Features/Journal/Domain/Use_Cases/update_journal_entry.dart';
 
+import '../Network/api_client.dart';
+
 final GetIt sl = GetIt.instance;
 
 void configureDependencies() {
+
+
+  // HTTP Client
+  sl.registerLazySingleton<Dio>(
+        () => ApiClient.createDio(),
+  );
+
+  // Secure Storage for authentication session
+  sl.registerLazySingleton<FlutterSecureStorage>(
+        () => const FlutterSecureStorage(),
+  );
+
+
+  sl.registerLazySingleton<AuthRemoteDataSource>(
+        () => AuthRemoteDataSourceImpl(sl<Dio>()),
+  );
+
+  sl.registerLazySingleton<AuthLocalDataSource>(
+        () => AuthLocalDataSourceImpl(sl<FlutterSecureStorage>()),
+  );
+
+
+
   sl.registerLazySingleton<AppDatabase>(
     AppDatabase.new,
     dispose: (database) => database.close(),
@@ -402,4 +441,31 @@ void configureDependencies() {
       deleteJournalEntry: sl<DeleteJournalEntry>(),
     ),
   );
+
+
+  // Authentication Repository
+  sl.registerLazySingleton<AuthRepository>(
+        () => AuthRepositoryImpl(
+      remoteDataSource: sl<AuthRemoteDataSource>(),
+      localDataSource: sl<AuthLocalDataSource>(),
+    ),
+  );
+
+  // Authentication Use Cases
+  sl.registerFactory(() => SendOtp(sl<AuthRepository>()));
+  sl.registerFactory(() => VerifyOtp(sl<AuthRepository>()));
+  sl.registerFactory(() => GetCurrentSession(sl<AuthRepository>()));
+  sl.registerFactory(() => Logout(sl<AuthRepository>()));
+  sl.registerFactory(() => RefreshSession(sl<AuthRepository>()));
+
+  // Authentication BLoC
+  sl.registerFactory(
+        () => AuthBloc(
+      sl<SendOtp>(),
+      sl<VerifyOtp>(),
+      sl<GetCurrentSession>(),
+      sl<Logout>(),
+    ),
+  );
+
 }
