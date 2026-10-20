@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mind_care/app/router/app_router.dart';
-import 'package:mind_care/app/theme/app_theme.dart';
+import 'package:mind_care/App/Router/app_router.dart';
+import 'package:mind_care/App/Theme/app_theme.dart';
 
 import '../Core/DI/injection.dart';
 import '../Features/Authentication/Presentation/Bloc/auth_bloc.dart';
