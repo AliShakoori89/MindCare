@@ -68,6 +68,25 @@ void main() {
         isA<Unauthenticated>(),
       ],
     );
+
+    blocTest<AuthBloc, AuthState>(
+      'emits Authenticated when a session exists',
+      build: () {
+        when(() => getCurrentSession())
+            .thenAnswer((_) async => session);
+
+        return authBloc;
+      },
+      act: (bloc) => bloc.add(AuthStarted()),
+      expect: () => [
+        isA<AuthLoading>(),
+        isA<Authenticated>().having(
+              (state) => state.session,
+          'session',
+          session,
+        ),
+      ],
+    );
   });
 
   group('SendOtpRequested', () {
@@ -93,6 +112,27 @@ void main() {
               (state) => state.message,
           'message',
           'ارسال کد تأیید ناموفق بود.',
+        ),
+      ],
+    );
+
+    blocTest<AuthBloc, AuthState>(
+      'emits OtpSent when sending OTP succeeds',
+      build: () {
+        when(() => sendOtp(email: 'test@example.com'))
+            .thenAnswer((_) async {});
+
+        return authBloc;
+      },
+      act: (bloc) => bloc.add(
+        SendOtpRequested('test@example.com'),
+      ),
+      expect: () => [
+        isA<AuthLoading>(),
+        isA<OtpSent>().having(
+              (state) => state.email,
+          'email',
+          'test@example.com',
         ),
       ],
     );
@@ -183,6 +223,23 @@ void main() {
           'خروج از حساب با خطا مواجه شد.',
         ),
       ],
+    );
+
+    blocTest<AuthBloc, AuthState>(
+      'emits Unauthenticated when logout succeeds',
+      build: () {
+        when(() => logout()).thenAnswer((_) async {});
+
+        return authBloc;
+      },
+      act: (bloc) => bloc.add(LogoutRequested()),
+      expect: () => [
+        isA<AuthLoading>(),
+        isA<Unauthenticated>(),
+      ],
+      verify: (_) {
+        verify(() => logout()).called(1);
+      },
     );
   });
 }
