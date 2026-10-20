@@ -128,57 +128,6 @@ void main() {
       },
     );
 
-    group('verifyOtp', () {
-      test('should save session locally after successful verification', () async {
-        when(
-              () => remoteDataSource.verifyOtp(
-            email: 'test@example.com',
-            code: '123456',
-          ),
-        ).thenAnswer((_) async => session);
-
-        when(() => localDataSource.saveSession(session))
-            .thenAnswer((_) async {});
-
-        final result = await repository.verifyOtp(
-          email: 'test@example.com',
-          code: '123456',
-        );
-
-        expect(result, session);
-
-        verify(() => localDataSource.saveSession(session)).called(1);
-      });
-
-      test('should map AuthApiException to AuthException', () async {
-        when(
-              () => remoteDataSource.verifyOtp(
-            email: 'test@example.com',
-            code: '000000',
-          ),
-        ).thenThrow(
-          const AuthApiException(
-            'کد تأیید نامعتبر است.',
-            statusCode: 400,
-          ),
-        );
-
-        await expectLater(
-          repository.verifyOtp(
-            email: 'test@example.com',
-            code: '000000',
-          ),
-          throwsA(
-            isA<AuthException>()
-                .having((error) => error.message, 'message', 'کد تأیید نامعتبر است.')
-                .having((error) => error.statusCode, 'statusCode', 400),
-          ),
-        );
-
-        verifyNever(() => localDataSource.saveSession(session));
-      });
-    });
-
     test(
       'should clear local session without calling remote logout '
           'when no saved session exists',
@@ -202,6 +151,57 @@ void main() {
     );
   });
 
+  group('verifyOtp', () {
+    test('should save session locally after successful verification', () async {
+      when(
+            () => remoteDataSource.verifyOtp(
+          email: 'test@example.com',
+          code: '123456',
+        ),
+      ).thenAnswer((_) async => session);
+
+      when(() => localDataSource.saveSession(session))
+          .thenAnswer((_) async {});
+
+      final result = await repository.verifyOtp(
+        email: 'test@example.com',
+        code: '123456',
+      );
+
+      expect(result, session);
+
+      verify(() => localDataSource.saveSession(session)).called(1);
+    });
+
+    test('should map AuthApiException to AuthException', () async {
+      when(
+            () => remoteDataSource.verifyOtp(
+          email: 'test@example.com',
+          code: '000000',
+        ),
+      ).thenThrow(
+        const AuthApiException(
+          'کد تأیید نامعتبر است.',
+          statusCode: 400,
+        ),
+      );
+
+      await expectLater(
+        repository.verifyOtp(
+          email: 'test@example.com',
+          code: '000000',
+        ),
+        throwsA(
+          isA<AuthException>()
+              .having((error) => error.message, 'message', 'کد تأیید نامعتبر است.')
+              .having((error) => error.statusCode, 'statusCode', 400),
+        ),
+      );
+
+      verifyNever(() => localDataSource.saveSession(session));
+    });
+  });
+
   group('getCurrentSession', () {
     test(
       'should clear local session and return null when server '
@@ -220,9 +220,6 @@ void main() {
             statusCode: 401,
           ),
         );
-
-        when(() => localDataSource.getSession())
-            .thenAnswer((_) async => session);
 
         when(() => localDataSource.clearSession())
             .thenAnswer((_) async {});
