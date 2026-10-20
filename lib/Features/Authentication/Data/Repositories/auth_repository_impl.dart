@@ -1,5 +1,6 @@
 
 import '../../Domain/Entities/auth_session.dart';
+import '../../Domain/Failures/auth_exception.dart';
 import '../../Domain/Repositories/auth_repository.dart';
 import '../Data_Sources/auth_local_data_source.dart';
 import '../Data_Sources/auth_remote_data_source.dart';
@@ -15,8 +16,12 @@ class AuthRepositoryImpl implements AuthRepository {
   });
 
   @override
-  Future<void> sendOtp({required String email}) {
-    return remoteDataSource.sendOtp(email: email);
+  Future<void> sendOtp({required String email}) async {
+    try {
+      await remoteDataSource.sendOtp(email: email);
+    } on AuthApiException catch (error) {
+      throw _mapException(error);
+    }
   }
 
   @override
@@ -24,13 +29,17 @@ class AuthRepositoryImpl implements AuthRepository {
     required String email,
     required String code,
   }) async {
-    final session = await remoteDataSource.verifyOtp(
-      email: email,
-      code: code,
-    );
+    try {
+      final session = await remoteDataSource.verifyOtp(
+        email: email,
+        code: code,
+      );
 
-    await localDataSource.saveSession(session);
-    return session;
+      await localDataSource.saveSession(session);
+      return session;
+    } on AuthApiException catch (error) {
+      throw _mapException(error);
+    }
   }
 
   @override
@@ -51,9 +60,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return null;
       }
 
-      // Network errors and server errors must not erase a valid
-      // locally stored session.
-      rethrow;
+      throw _mapException(error);
     }
   }
 
@@ -67,9 +74,17 @@ class AuthRepositoryImpl implements AuthRepository {
           accessToken: savedSession.accessToken,
         );
       }
+    } on AuthApiException catch (error) {
+      throw _mapException(error);
     } finally {
-      // Always remove the local session, even if the server is offline.
       await localDataSource.clearSession();
     }
+  }
+
+  AuthException _mapException(AuthApiException error) {
+    return AuthException(
+      error.message,
+      statusCode: error.statusCode,
+    );
   }
 }

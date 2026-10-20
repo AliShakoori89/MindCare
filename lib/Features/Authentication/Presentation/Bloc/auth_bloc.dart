@@ -1,10 +1,10 @@
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../Data/Data_Sources/auth_remote_data_source_impl.dart';
 import '../../Domain/Use_Cases/get_current_session.dart';
 import '../../Domain/Use_Cases/logout.dart';
 import '../../Domain/Use_Cases/send_otp.dart';
 import '../../Domain/Use_Cases/verify_otp.dart';
+import '../../Domain/Failures/auth_exception.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
@@ -94,7 +94,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   String _errorMessage(Object error) {
-    if (error is AuthApiException) {
+    if (error is AuthException) {
       return error.message;
     }
 
