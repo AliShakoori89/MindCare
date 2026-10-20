@@ -12,7 +12,5 @@ abstract interface class AuthRepository {
 
   Future<AuthSession?> getCurrentSession();
 
-  Future<AuthSession> refreshSession();
-
   Future<void> logout();
 }

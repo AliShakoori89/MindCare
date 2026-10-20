@@ -11,7 +11,6 @@ import '../../Features/Authentication/Data/Repositories/auth_repository_impl.dar
 import '../../Features/Authentication/Domain/Repositories/auth_repository.dart';
 import '../../Features/Authentication/Domain/Use_Cases/get_current_session.dart';
 import '../../Features/Authentication/Domain/Use_Cases/logout.dart';
-import '../../Features/Authentication/Domain/Use_Cases/refresh_session.dart';
 import '../../Features/Authentication/Domain/Use_Cases/send_otp.dart';
 import '../../Features/Authentication/Domain/Use_Cases/verify_otp.dart';
 import '../../Features/Authentication/Presentation/Bloc/auth_bloc.dart';
@@ -456,7 +455,6 @@ void configureDependencies() {
   sl.registerFactory(() => VerifyOtp(sl<AuthRepository>()));
   sl.registerFactory(() => GetCurrentSession(sl<AuthRepository>()));
   sl.registerFactory(() => Logout(sl<AuthRepository>()));
-  sl.registerFactory(() => RefreshSession(sl<AuthRepository>()));
 
   // Authentication BLoC
   sl.registerFactory(

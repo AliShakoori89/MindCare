@@ -58,22 +58,6 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<AuthSession> refreshSession() async {
-    final savedSession = await localDataSource.getSession();
-
-    if (savedSession == null) {
-      throw const AuthApiException('نشستی برای بازیابی وجود ندارد.');
-    }
-
-    final session = await remoteDataSource.getCurrentSession(
-      accessToken: savedSession.accessToken,
-    );
-
-    await localDataSource.saveSession(session);
-    return session;
-  }
-
-  @override
   Future<void> logout() async {
     final savedSession = await localDataSource.getSession();
 
