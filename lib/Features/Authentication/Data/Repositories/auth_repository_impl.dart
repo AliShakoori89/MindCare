@@ -70,12 +70,14 @@ class AuthRepositoryImpl implements AuthRepository {
 
     try {
       if (savedSession != null) {
-        await remoteDataSource.logout(
-          accessToken: savedSession.accessToken,
-        );
+        try {
+          await remoteDataSource.logout(
+            accessToken: savedSession.accessToken,
+          );
+        } on AuthApiException {
+          // Local logout must succeed even if server logout fails.
+        }
       }
-    } on AuthApiException catch (error) {
-      throw _mapException(error);
     } finally {
       await localDataSource.clearSession();
     }
