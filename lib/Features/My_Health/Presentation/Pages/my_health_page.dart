@@ -109,13 +109,11 @@ class MyHealthPage extends StatelessWidget {
               children: [
                 Icon(Icons.info_outline, color: _primaryColor, size: 26),
                 SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'اطلاعات این نسخه ممکن است نمونه باشد. '
-                    'برای تصمیم‌های درمانی به اطلاعات تأییدشده '
-                    'و نظر متخصص سلامت تکیه کن.',
-                    style: TextStyle(color: Colors.black54, height: 1.8),
-                  ),
+                Text(
+                  'اطلاعات این نسخه ممکن است نمونه باشد. '
+                      'برای تصمیم‌های درمانی به اطلاعات تأییدشده '
+                      'و نظر متخصص سلامت تکیه کن.',
+                  style: TextStyle(color: Colors.black54, height: 1.8),
                 ),
               ],
             ),

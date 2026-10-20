@@ -14,24 +14,22 @@ class MindCareApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<AuthBloc>(
-          create: (_) => sl<AuthBloc>(),
-        ),
+        BlocProvider<AuthBloc>.value(value: sl<AuthBloc>()),
         BlocProvider(create: (_) => sl<JournalBloc>()),
       ],
       child: MaterialApp.router(
-          debugShowCheckedModeBanner: false,
-          title: 'MindCare',
-          theme: AppTheme.light(),
-          routerConfig: appRouter,
+        debugShowCheckedModeBanner: false,
+        title: 'MindCare',
+        theme: AppTheme.light(),
+        routerConfig: appRouter,
 
-          builder: (context, child) {
-            return Directionality(
-              textDirection: TextDirection.rtl,
-              child: child ?? const SizedBox.shrink(),
-            );
-          },
-        )
+        builder: (context, child) {
+          return Directionality(
+            textDirection: TextDirection.rtl,
+            child: child ?? const SizedBox.shrink(),
+          );
+        },
+      ),
     );
   }
 }

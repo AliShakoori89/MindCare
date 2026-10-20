@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:mind_care/Core/Data_Base/Dao/users_dao.dart';
 import 'package:mind_care/Core/Data_Base/app_database.dart';
+
 import '../../Features/Authentication/Data/Data_Sources/auth_local_data_source.dart';
 import '../../Features/Authentication/Data/Data_Sources/auth_local_data_source_impl.dart';
 import '../../Features/Authentication/Data/Data_Sources/auth_remote_data_source.dart';
@@ -72,6 +73,7 @@ import '../../Features/User/Domain/UseCases/get_all_users.dart';
 import '../../Features/User/Domain/UseCases/get_user_by_id.dart';
 import '../../Features/User/Domain/UseCases/update_user.dart';
 import '../../Features/User/Presentation/Bloc/User_Bloc/user_bloc.dart';
+
 import 'package:mind_care/Core/Data_Base/Dao/patient_profiles_dao.dart';
 import 'package:mind_care/Features/Patient_Profile/Data/Data_Sources/patient_profile_local_data_source.dart';
 import 'package:mind_care/Features/Patient_Profile/Data/Data_Sources/patient_profile_local_data_source_impl.dart';
@@ -82,11 +84,13 @@ import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/delete_patien
 import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/get_patient_profile_by_id.dart';
 import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/get_patient_profile_by_user_id.dart';
 import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/update_patient_profile.dart';
+
 import '../Data_Base/Dao/conversations_dao.dart';
 import '../Data_Base/Dao/daily_check_ins_dao.dart';
 import '../Data_Base/Dao/journal_entries_dao.dart';
 import '../Data_Base/Dao/medications_dao.dart';
 import '../Data_Base/Dao/messages_dao.dart';
+
 import 'package:mind_care/Features/Journal/Data/Data_Sources/journal_local_data_source.dart';
 import 'package:mind_care/Features/Journal/Data/Repositories/journal_repository_impl.dart';
 import 'package:mind_care/Features/Journal/Domain/Repositories/journal_repository.dart';
@@ -101,28 +105,21 @@ import '../Network/api_client.dart';
 final GetIt sl = GetIt.instance;
 
 void configureDependencies() {
-
-
   // HTTP Client
-  sl.registerLazySingleton<Dio>(
-        () => ApiClient.createDio(),
-  );
+  sl.registerLazySingleton<Dio>(() => ApiClient.createDio());
 
   // Secure Storage for authentication session
   sl.registerLazySingleton<FlutterSecureStorage>(
-        () => const FlutterSecureStorage(),
+    () => const FlutterSecureStorage(),
   );
 
-
   sl.registerLazySingleton<AuthRemoteDataSource>(
-        () => AuthRemoteDataSourceImpl(sl<Dio>()),
+    () => AuthRemoteDataSourceImpl(sl<Dio>()),
   );
 
   sl.registerLazySingleton<AuthLocalDataSource>(
-        () => AuthLocalDataSourceImpl(sl<FlutterSecureStorage>()),
+    () => AuthLocalDataSourceImpl(sl<FlutterSecureStorage>()),
   );
-
-
 
   sl.registerLazySingleton<AppDatabase>(
     AppDatabase.new,
@@ -441,10 +438,9 @@ void configureDependencies() {
     ),
   );
 
-
   // Authentication Repository
   sl.registerLazySingleton<AuthRepository>(
-        () => AuthRepositoryImpl(
+    () => AuthRepositoryImpl(
       remoteDataSource: sl<AuthRemoteDataSource>(),
       localDataSource: sl<AuthLocalDataSource>(),
     ),
@@ -457,13 +453,12 @@ void configureDependencies() {
   sl.registerFactory(() => Logout(sl<AuthRepository>()));
 
   // Authentication BLoC
-  sl.registerFactory(
-        () => AuthBloc(
+  sl.registerLazySingleton<AuthBloc>(
+    () => AuthBloc(
       sl<SendOtp>(),
       sl<VerifyOtp>(),
       sl<GetCurrentSession>(),
       sl<Logout>(),
     ),
   );
-
 }

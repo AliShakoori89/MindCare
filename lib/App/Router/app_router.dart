@@ -1,4 +1,3 @@
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mind_care/Core/DI/injection.dart';
@@ -12,8 +11,72 @@ import 'package:mind_care/Features/Journal/Presentation/Pages/journal_form_page.
 import 'package:mind_care/Features/Journal/Presentation/Pages/journal_page.dart';
 import 'package:mind_care/Features/Home/Presentation/Pages/home_dashboard_page.dart';
 
+import '../../Features/Authentication/Presentation/Bloc/auth_bloc.dart';
+import '../../Features/Authentication/Presentation/Bloc/auth_state.dart';
+import 'auth_router_notifier.dart';
+
+final AuthBloc _authBloc = sl<AuthBloc>();
+
+final AuthRouterNotifier _authRouterNotifier = AuthRouterNotifier(_authBloc);
+
 final GoRouter appRouter = GoRouter(
   initialLocation: '/splash',
+
+  refreshListenable: _authRouterNotifier,
+
+  redirect: (context, state) {
+    final authState = _authBloc.state;
+    final location = state.matchedLocation;
+
+    final isSplash = location == '/splash';
+
+    final isAuthRoute = location == '/login' || location == '/register';
+
+    final isProtectedRoute = !isSplash && !isAuthRoute;
+
+    if (authState is Authenticated) {
+      if (isSplash || isAuthRoute) {
+        return '/';
+      }
+
+      return null;
+    }
+
+    if (authState is Unauthenticated || authState is OtpSent) {
+      if (isProtectedRoute || isSplash) {
+        return '/login';
+      }
+
+      return null;
+    }
+
+    if (authState is AuthInitial) {
+      if (isProtectedRoute) {
+        return '/splash';
+      }
+
+      return null;
+    }
+
+    if (authState is AuthLoading) {
+      if (isProtectedRoute) {
+        return '/login';
+      }
+
+      return null;
+    }
+
+    if (authState is AuthFailure) {
+      if (isProtectedRoute) {
+        return '/splash';
+      }
+
+      return null;
+    }
+
+    return null;
+  },
+
   routes: [
     GoRoute(
       path: '/splash',
@@ -66,10 +129,7 @@ final GoRouter appRouter = GoRouter(
 
             return BlocProvider(
               create: (_) => sl<JournalBloc>(),
-              child: JournalFormPage(
-                userId: userId,
-                entry: entry,
-              ),
+              child: JournalFormPage(userId: userId, entry: entry),
             );
           },
         ),

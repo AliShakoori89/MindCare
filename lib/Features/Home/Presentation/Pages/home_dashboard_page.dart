@@ -1,5 +1,5 @@
-
 import 'package:flutter/material.dart';
+
 import '../../../Ai_Assistant/Presentation/Pages/ai_assistant.dart';
 import '../../../Conditions/Presentation/Pages/conditions_page.dart';
 import '../../../Daily_Checkin/Presentation/Mock/mock_daily_check_in_store.dart';
@@ -25,16 +25,12 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
   static const Color _backgroundColor = Color(0xFFF8FAF7);
   static const Color _primaryColor = Color(0xFF4CA30D);
 
-
   Future<void> _openDailyCheckIn() async {
-    final existingCheckIn =
-        MockDailyCheckInStore.instance.today;
+    final existingCheckIn = MockDailyCheckInStore.instance.today;
 
     await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
-        builder: (_) => DailyCheckInPage(
-          existingCheckIn: existingCheckIn,
-        ),
+        builder: (_) => DailyCheckInPage(existingCheckIn: existingCheckIn),
       ),
     );
 
@@ -58,10 +54,7 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
       child: Scaffold(
         backgroundColor: _backgroundColor,
         body: SafeArea(
-          child: IndexedStack(
-            index: _selectedIndex,
-            children: pages,
-          ),
+          child: IndexedStack(index: _selectedIndex, children: pages),
         ),
         bottomNavigationBar: NavigationBar(
           selectedIndex: _selectedIndex,
@@ -103,8 +96,7 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
   }
 
   Widget _buildHome() {
-
-    final todayCheckIn  = MockDailyCheckInStore.instance.today;
+    final todayCheckIn = MockDailyCheckInStore.instance.today;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
@@ -117,9 +109,8 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
                 children: [
                   Text(
                     'سلام، روزت آرام 👋',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(context).textTheme.headlineSmall
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 6),
                   Container(
@@ -143,11 +134,7 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
             CircleAvatar(
               radius: 25,
               backgroundColor: _primaryColor.withValues(alpha: 0.12),
-              child: const Icon(
-                Icons.favorite,
-                color: _primaryColor,
-                size: 27,
-              ),
+              child: const Icon(Icons.favorite, color: _primaryColor, size: 27),
             ),
           ],
         ),
@@ -205,10 +192,7 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
                 MockDailyCheckInStore.instance.hasTodayCheckIn
                     ? 'حال امروزت ثبت شده؛ اگر لازم است آن را تغییر بده.'
                     : 'احساس و سطح انرژی امروزت رو ثبت کن تا الگوی آرامش، تاب آوری و خواب عمیقت با دقت شکل بگیره',
-                style: TextStyle(
-                  color: Colors.white,
-                  height: 1.7,
-                ),
+                style: TextStyle(color: Colors.white, height: 1.7),
               ),
               const SizedBox(height: 18),
               Align(
@@ -219,9 +203,10 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
                     backgroundColor: Colors.white,
                     foregroundColor: _primaryColor,
                   ),
-                  child: Text(MockDailyCheckInStore.instance.hasTodayCheckIn
-                    ? 'بروز زسانی حال روزانه.'
-                    : 'شروع ثبت روزانه',
+                  child: Text(
+                    MockDailyCheckInStore.instance.hasTodayCheckIn
+                        ? 'بروز زسانی حال روزانه.'
+                        : 'شروع ثبت روزانه',
                   ),
                 ),
               ),
@@ -270,12 +255,10 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
               title: 'دفترچه یادداشت',
               subtitle: 'ثبت احساسات و افکار',
               color: const Color(0xFF7C5CE7),
-              onTap: (){
+              onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute<void>(
-                    builder: (_) => JournalPage(
-                      userId: '10',
-                    ),
+                    builder: (_) => JournalPage(userId: '10'),
                   ),
                 );
               },
@@ -343,7 +326,7 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
               Text('تأمل روزانه'),
               _sectionTitle('پذیرش آرام آنچه در جریان است'),
               Container(
-                decoration:BoxDecoration(
+                decoration: BoxDecoration(
                   color: Colors.grey[300],
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -351,14 +334,12 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
                 margin: EdgeInsets.only(top: 10),
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: Expanded(
-                      child: Text(
-                        '«آرامش به این معنا نیست که طوفانی در کار نباشد، بلکه به این معناست که در دل طوفان، لنگرگاهی استوار در درون خود داشته باشی.»',
-                        style: TextStyle(color: Colors.black54, height: 1.6),
-                        textAlign: TextAlign.justify,
-                      )
+                  child: Text(
+                    '«آرامش به این معنا نیست که طوفانی در کار نباشد، بلکه به این معناست که در دل طوفان، لنگرگاهی استوار در درون خود داشته باشی.»',
+                    style: TextStyle(color: Colors.black54, height: 1.6),
+                    textAlign: TextAlign.justify,
                   ),
-                )
+                ),
               ),
             ],
           ),
@@ -370,9 +351,8 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
   Widget _sectionTitle(String title) {
     return Text(
       title,
-      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-        fontWeight: FontWeight.bold,
-      ),
+      style: Theme.of(context).textTheme.titleLarge
+          ?.copyWith(fontWeight: FontWeight.bold),
     );
   }
 }
@@ -405,10 +385,7 @@ class _MetricCard extends StatelessWidget {
           const SizedBox(height: 16),
           Text(title, style: const TextStyle(color: Colors.black54)),
           const SizedBox(height: 6),
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -446,19 +423,13 @@ class _QuickActionCard extends StatelessWidget {
             children: [
               Icon(icon, color: color, size: 28),
               const SizedBox(height: 10),
-              Text(
-                title,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
+              Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               Text(
                 subtitle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.black54,
-                  fontSize: 12,
-                ),
+                style: const TextStyle(color: Colors.black54, fontSize: 12),
               ),
             ],
           ),
