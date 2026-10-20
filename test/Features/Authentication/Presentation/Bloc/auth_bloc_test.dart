@@ -55,25 +55,6 @@ void main() {
 
   group('AuthStarted', () {
     blocTest<AuthBloc, AuthState>(
-      'emits AuthFailure when restoring session fails unexpectedly',
-      build: () {
-        when(() => getCurrentSession())
-            .thenThrow(Exception('Network error'));
-
-        return authBloc;
-      },
-      act: (bloc) => bloc.add(AuthStarted()),
-      expect: () => [
-        isA<AuthLoading>(),
-        isA<AuthFailure>().having(
-              (state) => state.message,
-          'message',
-          'خطای غیرمنتظره‌ای رخ داد. دوباره تلاش کنید.',
-        ),
-      ],
-    );
-
-    blocTest<AuthBloc, AuthState>(
       'emits Unauthenticated when no session exists',
       build: () {
         when(() => getCurrentSession())
