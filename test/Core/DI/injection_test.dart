@@ -9,6 +9,10 @@ import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/get_patient_p
 import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/get_patient_profile_by_user_id.dart';
 import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/update_patient_profile.dart';
 import 'package:mind_care/Features/Patient_Profile/Presentation/Bloc/Patient_Profile_Bloc/Patient_Profile_Bloc.dart';
+import 'package:mind_care/Features/Conditions/Data/Data_Sources/condition_local_data_source.dart';
+import 'package:mind_care/Features/Conditions/Domain/Repositories/condition_repository.dart';
+import 'package:mind_care/Features/Conditions/Domain/Use_Cases/create_condition.dart';
+import 'package:mind_care/Features/Conditions/Presentation/Bloc/condition_bloc.dart';
 
 void main() {
   setUp(() async {
@@ -65,6 +69,42 @@ void main() {
       sl<PatientProfileBloc>(),
       isA<PatientProfileBloc>(),
     );
+  });
+
+  test('Condition dependency graph should resolve', () {
+    expect(
+      sl<ConditionLocalDataSource>(),
+      isA<ConditionLocalDataSource>(),
+    );
+
+    expect(
+      sl<ConditionRepository>(),
+      isA<ConditionRepository>(),
+    );
+
+    expect(
+      sl<CreateCondition>(),
+      isA<CreateCondition>(),
+    );
+
+    expect(
+      sl<ConditionBloc>(),
+      isA<ConditionBloc>(),
+    );
+  });
+
+  test('ConditionRepository should be a lazy singleton', () {
+    final first = sl<ConditionRepository>();
+    final second = sl<ConditionRepository>();
+
+    expect(identical(first, second), isTrue);
+  });
+
+  test('ConditionBloc should be a factory', () {
+    final first = sl<ConditionBloc>();
+    final second = sl<ConditionBloc>();
+
+    expect(identical(first, second), isFalse);
   });
 
   test('PatientProfileRepository should be a lazy singleton', () {

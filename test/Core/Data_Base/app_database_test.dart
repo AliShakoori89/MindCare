@@ -15,15 +15,15 @@ void main() {
     await database.close();
   });
 
-  test('creates all 11 tables', () async {
+  test('creates all 13 tables', () async {
     final tables = await database.customSelect(
       '''
-      SELECT name
-      FROM sqlite_master
-      WHERE type = 'table'
-      AND name NOT LIKE 'sqlite_%'
-      ORDER BY name
-      ''',
+    SELECT name
+    FROM sqlite_master
+    WHERE type = 'table'
+    AND name NOT LIKE 'sqlite_%'
+    ORDER BY name
+    ''',
     ).get();
 
     final tableNames = tables
@@ -44,9 +44,32 @@ void main() {
         'insights',
         'conversations',
         'messages',
+        'outbox',
+        'sync_cursors',
       ]),
     );
 
-    expect(tableNames.length, 11);
+    expect(tableNames.length, 13);
+  });
+
+  test('sync_cursors enforces unique user_id', () async {
+    await database.into(database.syncCursors).insert(
+      SyncCursorsCompanion.insert(
+        id: 'cursor-1',
+        userId: 'user-1',
+        updatedAt: DateTime(2026, 10, 21),
+      ),
+    );
+
+    expect(
+          () => database.into(database.syncCursors).insert(
+        SyncCursorsCompanion.insert(
+          id: 'cursor-2',
+          userId: 'user-1',
+          updatedAt: DateTime(2026, 10, 21),
+        ),
+      ),
+      throwsA(isA<Exception>()),
+    );
   });
 }

@@ -49,6 +49,7 @@ dependencies:
   shamsi_date: ^1.1.1
   persian_number_utility: ^1.1.6
   flutter_secure_storage: ^11.2.0
+  uuid: ^4.6.0
 
 dev_dependencies:
   flutter_test:

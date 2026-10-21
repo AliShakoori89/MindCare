@@ -1,6 +1,5 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mind_care/Core/Data_Base/Dao/conditions_dao.dart';
 import 'package:mind_care/Core/Data_Base/Dao/users_dao.dart';
 import 'package:mind_care/Features/Conditions/Data/Data_Sources/condition_local_data_source.dart';
 import 'package:mind_care/Features/Conditions/Data/Data_Sources/condition_local_data_source_impl.dart';
@@ -12,7 +11,6 @@ as domain;
 void main() {
   late db.AppDatabase database;
   late UsersDao usersDao;
-  late ConditionsDao conditionsDao;
   late ConditionLocalDataSource localDataSource;
   late ConditionRepositoryImpl repository;
 
@@ -55,20 +53,11 @@ void main() {
   }
 
   setUp(() {
-    database = db.AppDatabase.forTesting(
-      NativeDatabase.memory(),
-    );
+    database = db.AppDatabase.forTesting(NativeDatabase.memory());
 
     usersDao = UsersDao(database);
-    conditionsDao = ConditionsDao(database);
-
-    localDataSource = ConditionLocalDataSourceImpl(
-      conditionsDao,
-    );
-
-    repository = ConditionRepositoryImpl(
-      localDataSource,
-    );
+    localDataSource = ConditionLocalDataSourceImpl(database);
+    repository = ConditionRepositoryImpl(localDataSource);
   });
 
   tearDown(() async {

@@ -15,6 +15,9 @@ import '../../Features/Authentication/Domain/Use_Cases/logout.dart';
 import '../../Features/Authentication/Domain/Use_Cases/send_otp.dart';
 import '../../Features/Authentication/Domain/Use_Cases/verify_otp.dart';
 import '../../Features/Authentication/Presentation/Bloc/auth_bloc.dart';
+import '../../Features/Conditions/Data/Data_Sources/condition_local_data_source.dart';
+import '../../Features/Conditions/Data/Data_Sources/condition_local_data_source_impl.dart';
+import '../../Features/Conditions/Data/Repositories/condition_repository_impl.dart';
 import '../../Features/Conditions/Domain/Repositories/condition_repository.dart';
 import '../../Features/Conditions/Domain/Use_Cases/create_condition.dart';
 import '../../Features/Conditions/Domain/Use_Cases/delete_condition.dart';
@@ -106,7 +109,14 @@ final GetIt sl = GetIt.instance;
 
 void configureDependencies() {
   // HTTP Client
-  sl.registerLazySingleton<Dio>(() => ApiClient.createDio());
+  sl.registerLazySingleton<Dio>(
+    () => ApiClient.createDio(
+      accessTokenProvider: () async {
+        final session = await sl<AuthLocalDataSource>().getSession();
+        return session?.accessToken;
+      },
+    ),
+  );
 
   // Secure Storage for authentication session
   sl.registerLazySingleton<FlutterSecureStorage>(
@@ -201,6 +211,14 @@ void configureDependencies() {
   );
 
   //------------------------------------------------------------------
+
+  sl.registerLazySingleton<ConditionLocalDataSource>(
+        () => ConditionLocalDataSourceImpl(sl<AppDatabase>()),
+  );
+
+  sl.registerLazySingleton<ConditionRepository>(
+        () => ConditionRepositoryImpl(sl<ConditionLocalDataSource>()),
+  );
 
   sl.registerFactory<CreateCondition>(
     () => CreateCondition(sl<ConditionRepository>()),
