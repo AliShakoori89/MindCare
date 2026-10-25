@@ -150,6 +150,7 @@ void main() {
         () => dio.post(
           '/conditions',
           data: {
+            'id': 'condition-123',
             'name': 'Migraine',
             'status': 'active',
             'diagnosedAt': diagnosedAt.toIso8601String(),
@@ -181,6 +182,7 @@ void main() {
       );
 
       final result = await dataSource.createCondition(
+        id: 'condition-123',
         name: 'Migraine',
         status: 'active',
         diagnosedAt: diagnosedAt,
@@ -195,6 +197,7 @@ void main() {
         () => dio.post(
           '/conditions',
           data: {
+            'id': 'condition-123',
             'name': 'Migraine',
             'status': 'active',
             'diagnosedAt': diagnosedAt.toIso8601String(),

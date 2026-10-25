@@ -11,9 +11,7 @@ void main() {
   late ConditionsDao conditionsDao;
 
   setUp(() {
-    database = AppDatabase.forTesting(
-      NativeDatabase.memory(),
-    );
+    database = AppDatabase.forTesting(NativeDatabase.memory());
 
     usersDao = UsersDao(database);
     conditionsDao = ConditionsDao(database);
@@ -30,11 +28,7 @@ void main() {
 
   Future<void> createUser() {
     return usersDao.insertUser(
-      UsersCompanion.insert(
-        id: userId,
-        createdAt: now,
-        updatedAt: now,
-      ),
+      UsersCompanion.insert(id: userId, createdAt: now, updatedAt: now),
     );
   }
 
@@ -63,214 +57,222 @@ void main() {
     );
   }
 
-  test(
-    'insertCondition and getConditionById should work',
-        () async {
-      await createUser();
+  test('insertCondition and getConditionById should work', () async {
+    await createUser();
 
-      await conditionsDao.insertCondition(
-        createCondition(),
-      );
+    await conditionsDao.insertCondition(createCondition());
 
-      final condition = await conditionsDao.getConditionById(
-        conditionId,
-      );
+    final condition = await conditionsDao.getConditionById(conditionId);
 
-      expect(condition, isNotNull);
-      expect(condition!.id, conditionId);
-      expect(condition.userId, userId);
-      expect(condition.name, 'Diabetes');
-      expect(condition.status, 'active');
-    },
-  );
+    expect(condition, isNotNull);
+    expect(condition!.id, conditionId);
+    expect(condition.userId, userId);
+    expect(condition.name, 'Diabetes');
+    expect(condition.status, 'active');
+  });
 
   test(
     'getConditionById should return null when condition does not exist',
-        () async {
-      final condition = await conditionsDao.getConditionById(
-        'not-found',
-      );
+    () async {
+      final condition = await conditionsDao.getConditionById('not-found');
 
       expect(condition, isNull);
     },
   );
 
-  test(
-    'getConditionsByUserId should return user active conditions',
-        () async {
-      await createUser();
+  test('getConditionsByUserId should return user active conditions', () async {
+    await createUser();
 
-      await conditionsDao.insertCondition(
-        createCondition(
-          id: 'condition-1',
-          name: 'Diabetes',
-        ),
-      );
+    await conditionsDao.insertCondition(
+      createCondition(id: 'condition-1', name: 'Diabetes'),
+    );
 
-      await conditionsDao.insertCondition(
-        createCondition(
-          id: 'condition-2',
-          name: 'Hypertension',
-        ),
-      );
+    await conditionsDao.insertCondition(
+      createCondition(id: 'condition-2', name: 'Hypertension'),
+    );
 
-      final conditions =
-      await conditionsDao.getConditionsByUserId(userId);
+    final conditions = await conditionsDao.getConditionsByUserId(userId);
 
-      expect(conditions, hasLength(2));
-      expect(conditions[0].name, 'Diabetes');
-      expect(conditions[1].name, 'Hypertension');
-    },
-  );
+    expect(conditions, hasLength(2));
+    expect(conditions[0].name, 'Diabetes');
+    expect(conditions[1].name, 'Hypertension');
+  });
 
   test(
     'getConditionsByUserId should not return soft deleted conditions',
-        () async {
+    () async {
       await createUser();
 
-      await conditionsDao.insertCondition(
-        createCondition(),
-      );
+      await conditionsDao.insertCondition(createCondition());
 
       await conditionsDao.deleteCondition(conditionId);
 
-      final conditions =
-      await conditionsDao.getConditionsByUserId(userId);
+      final conditions = await conditionsDao.getConditionsByUserId(userId);
 
       expect(conditions, isEmpty);
     },
   );
 
+  test('getConditionById should not return soft deleted condition', () async {
+    await createUser();
+
+    await conditionsDao.insertCondition(createCondition());
+
+    await conditionsDao.deleteCondition(conditionId);
+
+    final condition = await conditionsDao.getConditionById(conditionId);
+
+    expect(condition, isNull);
+  });
+
+  test('deleteCondition should perform soft delete', () async {
+    await createUser();
+
+    await conditionsDao.insertCondition(createCondition());
+
+    final deletedRows = await conditionsDao.deleteCondition(conditionId);
+
+    expect(deletedRows, 1);
+
+    final condition =
+        await (conditionsDao.select(conditionsDao.conditions)
+              ..where((condition) => condition.id.equals(conditionId)))
+            .getSingleOrNull();
+
+    expect(condition, isNotNull);
+    expect(condition!.deletedAt, isNotNull);
+  });
+
   test(
-    'getConditionById should not return soft deleted condition',
-        () async {
+    'applyRemoteDeleteCondition should use the server deletion timestamp',
+    () async {
       await createUser();
 
-      await conditionsDao.insertCondition(
-        createCondition(),
-      );
+      await conditionsDao.insertCondition(createCondition());
 
-      await conditionsDao.deleteCondition(conditionId);
+      final serverDeletedAt = DateTime(2026, 3, 15, 10, 30);
 
-      final condition = await conditionsDao.getConditionById(
-        conditionId,
-      );
-
-      expect(condition, isNull);
-    },
-  );
-
-  test(
-    'deleteCondition should perform soft delete',
-        () async {
-      await createUser();
-
-      await conditionsDao.insertCondition(
-        createCondition(),
-      );
-
-      final deletedRows = await conditionsDao.deleteCondition(
-        conditionId,
+      final deletedRows = await conditionsDao.applyRemoteDeleteCondition(
+        id: conditionId,
+        deletedAt: serverDeletedAt,
       );
 
       expect(deletedRows, 1);
 
-      final condition = await (conditionsDao.select(
-        conditionsDao.conditions,
-      )..where(
-            (condition) => condition.id.equals(conditionId),
-      ))
-          .getSingleOrNull();
+      final condition =
+          await (conditionsDao.select(conditionsDao.conditions)
+                ..where((condition) => condition.id.equals(conditionId)))
+              .getSingleOrNull();
 
       expect(condition, isNotNull);
-      expect(condition!.deletedAt, isNotNull);
+      expect(condition!.deletedAt, serverDeletedAt);
+      expect(condition.updatedAt, serverDeletedAt);
+
+      // Remote changes must remain hidden from normal local reads.
+      expect(await conditionsDao.getConditionById(conditionId), isNull);
     },
   );
 
   test(
-    'updateCondition should update the condition',
-        () async {
+    'applyRemoteCondition should insert a condition received from server',
+    () async {
       await createUser();
 
-      await conditionsDao.insertCondition(
-        createCondition(),
-      );
-
-      final updatedTime = DateTime(2026, 2, 1);
-
-      final updatedCondition = createCondition(
-        name: 'Updated Diabetes',
-        status: 'resolved',
-        notes: 'Condition updated',
-        updatedAt: updatedTime,
-      );
-
-      final result = await conditionsDao.updateCondition(
-        updatedCondition,
-      );
-
-      expect(result, isTrue);
-
-      final condition = await conditionsDao.getConditionById(
-        conditionId,
-      );
-
-      expect(condition, isNotNull);
-      expect(condition!.name, 'Updated Diabetes');
-      expect(condition.status, 'resolved');
-      expect(condition.notes, 'Condition updated');
-      expect(condition.updatedAt, updatedTime);
-    },
-  );
-
-  test(
-    'insertCondition should fail when userId does not exist',
-        () async {
-      final condition = ConditionsCompanion.insert(
-        id: conditionId,
-        userId: 'non-existing-user',
-        name: 'Diabetes',
+      final serverCondition = createCondition(
+        name: 'Remote Diabetes',
         status: 'active',
-        createdAt: now,
-        updatedAt: now,
+        updatedAt: DateTime(2026, 2, 10),
       );
 
-      expect(
-            () => conditionsDao.insertCondition(condition),
-        throwsA(isA<Exception>()),
-      );
+      await conditionsDao.applyRemoteCondition(serverCondition);
+
+      final condition = await conditionsDao.getConditionById(conditionId);
+
+      expect(condition, isNotNull);
+      expect(condition!.name, 'Remote Diabetes');
+      expect(condition.updatedAt, DateTime(2026, 2, 10));
     },
   );
 
-  test(
-    'deleting a user should cascade delete its conditions',
-        () async {
-      await createUser();
+  test('applyRemoteCondition should update an existing condition', () async {
+    await createUser();
+    await conditionsDao.insertCondition(createCondition());
 
-      await conditionsDao.insertCondition(
-        createCondition(),
-      );
+    final serverCondition = createCondition(
+      name: 'Updated from server',
+      status: 'resolved',
+      updatedAt: DateTime(2026, 2, 10),
+    );
 
-      expect(
-        await conditionsDao.getConditionById(conditionId),
-        isNotNull,
-      );
+    await conditionsDao.applyRemoteCondition(serverCondition);
 
-      await usersDao.deleteUser(userId);
+    final condition = await conditionsDao.getConditionById(conditionId);
 
-      expect(
-        await conditionsDao.getConditionById(conditionId),
-        isNull,
-      );
+    expect(condition, isNotNull);
+    expect(condition!.name, 'Updated from server');
+    expect(condition.status, 'resolved');
+    expect(condition.updatedAt, DateTime(2026, 2, 10));
+  });
 
-      final condition = await (conditionsDao.select(
-        conditionsDao.conditions,
-      )..where(
-            (condition) => condition.id.equals(conditionId),
-      ))
-          .getSingleOrNull();
+  test('updateCondition should update the condition', () async {
+    await createUser();
 
-      expect(condition, isNull);
-    },
-  );
+    await conditionsDao.insertCondition(createCondition());
+
+    final updatedTime = DateTime(2026, 2, 1);
+
+    final updatedCondition = createCondition(
+      name: 'Updated Diabetes',
+      status: 'resolved',
+      notes: 'Condition updated',
+      updatedAt: updatedTime,
+    );
+
+    final result = await conditionsDao.updateCondition(updatedCondition);
+
+    expect(result, isTrue);
+
+    final condition = await conditionsDao.getConditionById(conditionId);
+
+    expect(condition, isNotNull);
+    expect(condition!.name, 'Updated Diabetes');
+    expect(condition.status, 'resolved');
+    expect(condition.notes, 'Condition updated');
+    expect(condition.updatedAt, updatedTime);
+  });
+
+  test('insertCondition should fail when userId does not exist', () async {
+    final condition = ConditionsCompanion.insert(
+      id: conditionId,
+      userId: 'non-existing-user',
+      name: 'Diabetes',
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+    );
+
+    expect(
+      () => conditionsDao.insertCondition(condition),
+      throwsA(isA<Exception>()),
+    );
+  });
+
+  test('deleting a user should cascade delete its conditions', () async {
+    await createUser();
+
+    await conditionsDao.insertCondition(createCondition());
+
+    expect(await conditionsDao.getConditionById(conditionId), isNotNull);
+
+    await usersDao.deleteUser(userId);
+
+    expect(await conditionsDao.getConditionById(conditionId), isNull);
+
+    final condition =
+        await (conditionsDao.select(conditionsDao.conditions)
+              ..where((condition) => condition.id.equals(conditionId)))
+            .getSingleOrNull();
+
+    expect(condition, isNull);
+  });
 }

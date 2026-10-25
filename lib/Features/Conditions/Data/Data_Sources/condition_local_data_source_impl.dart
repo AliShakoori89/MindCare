@@ -24,6 +24,7 @@ class ConditionLocalDataSourceImpl
           entityId: condition.id.value,
           operation: 'create',
           payload: jsonEncode({
+            'userId': condition.userId.value,
             'name': condition.name.value,
             'status': condition.status.value,
             'diagnosedAt':
@@ -66,6 +67,7 @@ class ConditionLocalDataSourceImpl
           entityId: condition.id.value,
           operation: 'update',
           payload: jsonEncode({
+            'userId': condition.userId.value,
             'name': condition.name.value,
             'status': condition.status.value,
             'diagnosedAt':

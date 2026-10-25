@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:mind_care/Core/Data_Base/app_database.dart'as db;
 import 'package:mind_care/Features/Conditions/Domain/Entities/condition.dart'as domain;
+import 'package:mind_care/Features/Conditions/Data/Models/condition_model.dart';
 
 class ConditionMapper {
   static domain.Condition toDomain(db.Condition condition) {
@@ -16,6 +17,25 @@ class ConditionMapper {
       updatedAt: condition.updatedAt,
       deletedAt: condition.deletedAt,
     );
+  }
+
+  static domain.Condition modelToDomain(ConditionModel model) {
+    return domain.Condition(
+      id: model.id,
+      userId: model.userId,
+      name: model.name,
+      status: model.status,
+      diagnosedAt: model.diagnosedAt,
+      diagnosedBy: model.diagnosedBy,
+      notes: model.notes,
+      createdAt: model.createdAt,
+      updatedAt: model.updatedAt,
+      deletedAt: model.deletedAt,
+    );
+  }
+
+  static db.ConditionsCompanion modelToCompanion(ConditionModel model) {
+    return toCompanion(modelToDomain(model));
   }
 
   static db.ConditionsCompanion toCompanion(domain.Condition condition) {

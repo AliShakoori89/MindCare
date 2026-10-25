@@ -11,6 +11,7 @@ abstract interface class ConditionRemoteDataSource {
   Future<ConditionModel> getConditionById(String id);
 
   Future<ConditionModel> createCondition({
+    required String id,
     required String name,
     required String status,
     DateTime? diagnosedAt,

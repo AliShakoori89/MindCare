@@ -31,6 +31,20 @@ class OutboxDao extends DatabaseAccessor<AppDatabase>
     return update(outbox).replace(entry);
   }
 
+  Future<int> markAsFailed({
+    required String id,
+    required int attempts,
+    required String error,
+  }) {
+    return (update(outbox)..where((entry) => entry.id.equals(id))).write(
+      OutboxCompanion(
+        attempts: Value(attempts),
+        lastError: Value(error),
+        status: const Value('pending'),
+      ),
+    );
+  }
+
   Future<int> deleteById(String id) {
     return (delete(outbox)
       ..where((entry) => entry.id.equals(id)))

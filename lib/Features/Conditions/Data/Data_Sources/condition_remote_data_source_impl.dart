@@ -40,6 +40,7 @@ class ConditionRemoteDataSourceImpl implements ConditionRemoteDataSource {
 
   @override
   Future<ConditionModel> createCondition({
+    required String id,
     required String name,
     required String status,
     DateTime? diagnosedAt,
@@ -49,6 +50,7 @@ class ConditionRemoteDataSourceImpl implements ConditionRemoteDataSource {
     final response = await _dio.post(
       '/conditions',
       data: {
+        'id': id,
         'name': name,
         'status': status,
         'diagnosedAt': diagnosedAt?.toIso8601String(),

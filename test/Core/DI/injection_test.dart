@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mind_care/Core/Data_Base/app_database.dart';
 import 'package:mind_care/Core/DI/injection.dart';
+import 'package:mind_care/Core/Sync/Data/Data_Sources/sync_remote_data_source.dart';
 import 'package:mind_care/Features/Patient_Profile/Data/Data_Sources/patient_profile_local_data_source.dart';
 import 'package:mind_care/Features/Patient_Profile/Domain/Repositories/patient_profile_repository.dart';
 import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/create_patient_profile.dart';
@@ -119,5 +120,19 @@ void main() {
     final second = sl<PatientProfileBloc>();
 
     expect(identical(first, second), isFalse);
+  });
+
+  test('SyncRemoteDataSource dependency should resolve', () {
+    expect(
+      sl<SyncRemoteDataSource>(),
+      isA<SyncRemoteDataSource>(),
+    );
+  });
+
+  test('SyncRemoteDataSource should be a lazy singleton', () {
+    final first = sl<SyncRemoteDataSource>();
+    final second = sl<SyncRemoteDataSource>();
+
+    expect(identical(first, second), isTrue);
   });
 }

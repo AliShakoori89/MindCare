@@ -104,6 +104,11 @@ import 'package:mind_care/Features/Journal/Domain/Use_Cases/get_journal_entry_by
 import 'package:mind_care/Features/Journal/Domain/Use_Cases/update_journal_entry.dart';
 
 import '../Network/api_client.dart';
+import '../Sync/Data/Data_Sources/sync_remote_data_source.dart';
+import '../Sync/Data/Data_Sources/sync_remote_data_source_impl.dart';
+
+import '../../Features/Conditions/Data/Data_Sources/condition_remote_data_source.dart';
+import '../../Features/Conditions/Data/Data_Sources/condition_remote_data_source_impl.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -137,6 +142,14 @@ void configureDependencies() {
   );
 
   sl.registerLazySingleton<UsersDao>(() => UsersDao(sl<AppDatabase>()));
+
+  sl.registerLazySingleton<SyncRemoteDataSource>(
+    () => SyncRemoteDataSourceImpl(sl<Dio>()),
+  );
+
+  sl.registerLazySingleton<ConditionRemoteDataSource>(
+        () => ConditionRemoteDataSourceImpl(sl<Dio>()),
+  );
 
   sl.registerLazySingleton<UserLocalDataSource>(
     () => UserLocalDataSourceImpl(sl<UsersDao>()),
@@ -213,11 +226,11 @@ void configureDependencies() {
   //------------------------------------------------------------------
 
   sl.registerLazySingleton<ConditionLocalDataSource>(
-        () => ConditionLocalDataSourceImpl(sl<AppDatabase>()),
+    () => ConditionLocalDataSourceImpl(sl<AppDatabase>()),
   );
 
   sl.registerLazySingleton<ConditionRepository>(
-        () => ConditionRepositoryImpl(sl<ConditionLocalDataSource>()),
+    () => ConditionRepositoryImpl(sl<ConditionLocalDataSource>()),
   );
 
   sl.registerFactory<CreateCondition>(
