@@ -43,11 +43,16 @@ class ConditionsDao extends DatabaseAccessor<AppDatabase>
     return update(conditions).replace(condition);
   }
 
-  Future<int> deleteCondition(String id) {
+  Future<int> deleteCondition({
+    required String id,
+    required String userId,
+  }) {
     return (update(conditions)..where(
-          (condition) => condition.id.equals(id) & condition.deletedAt.isNull(),
-        ))
-        .write(
+          (condition) =>
+      condition.id.equals(id) &
+      condition.userId.equals(userId) &
+      condition.deletedAt.isNull(),
+    )).write(
           ConditionsCompanion(
             deletedAt: Value(DateTime.now()),
             updatedAt: Value(DateTime.now()),
@@ -57,11 +62,14 @@ class ConditionsDao extends DatabaseAccessor<AppDatabase>
 
   Future<int> applyRemoteDeleteCondition({
     required String id,
+    required String userId,
     required DateTime deletedAt,
   }) {
     return (update(
       conditions,
-    )..where((condition) => condition.id.equals(id))).write(
+    )..where((condition) => condition.id.equals(id) &
+    condition.userId.equals(userId),
+    )).write(
       ConditionsCompanion(
         deletedAt: Value(deletedAt),
         updatedAt: Value(deletedAt),

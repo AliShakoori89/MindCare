@@ -1,25 +1,25 @@
 import 'dart:convert';
 
+import 'package:drift/drift.dart';
 import 'package:mind_care/Core/Data_Base/app_database.dart';
 import 'package:uuid/uuid.dart';
+
 import 'condition_local_data_source.dart';
 
-class ConditionLocalDataSourceImpl
-    implements ConditionLocalDataSource {
+class ConditionLocalDataSourceImpl implements ConditionLocalDataSource {
   final AppDatabase _db;
 
   ConditionLocalDataSourceImpl(this._db);
 
   @override
-  Future<void> insertCondition(
-      ConditionsCompanion condition,
-      ) {
+  Future<void> insertCondition(ConditionsCompanion condition) {
     return _db.transaction(() async {
       await _db.conditionsDao.insertCondition(condition);
 
       await _db.outboxDao.insertOutbox(
         OutboxCompanion.insert(
           id: const Uuid().v4(),
+          userId: Value(condition.userId.value),
           entityType: 'condition',
           entityId: condition.id.value,
           operation: 'create',
@@ -27,8 +27,7 @@ class ConditionLocalDataSourceImpl
             'userId': condition.userId.value,
             'name': condition.name.value,
             'status': condition.status.value,
-            'diagnosedAt':
-            condition.diagnosedAt.value?.toIso8601String(),
+            'diagnosedAt': condition.diagnosedAt.value?.toIso8601String(),
             'diagnosedBy': condition.diagnosedBy.value,
             'notes': condition.notes.value,
           }),
@@ -50,9 +49,7 @@ class ConditionLocalDataSourceImpl
   }
 
   @override
-  Future<bool> updateCondition(
-      ConditionsCompanion condition,
-      ) async {
+  Future<bool> updateCondition(ConditionsCompanion condition) async {
     return _db.transaction(() async {
       final updated = await _db.conditionsDao.updateCondition(condition);
 
@@ -63,6 +60,7 @@ class ConditionLocalDataSourceImpl
       await _db.outboxDao.insertOutbox(
         OutboxCompanion.insert(
           id: const Uuid().v4(),
+          userId: Value(condition.userId.value),
           entityType: 'condition',
           entityId: condition.id.value,
           operation: 'update',
@@ -70,8 +68,7 @@ class ConditionLocalDataSourceImpl
             'userId': condition.userId.value,
             'name': condition.name.value,
             'status': condition.status.value,
-            'diagnosedAt':
-            condition.diagnosedAt.value?.toIso8601String(),
+            'diagnosedAt': condition.diagnosedAt.value?.toIso8601String(),
             'diagnosedBy': condition.diagnosedBy.value,
             'notes': condition.notes.value,
           }),
@@ -87,19 +84,28 @@ class ConditionLocalDataSourceImpl
   @override
   Future<int> deleteCondition(String id) async {
     return _db.transaction(() async {
-      final deleted = await _db.conditionsDao.deleteCondition(id);
+      final condition = await _db.conditionsDao
+          .getConditionByIdIncludingDeleted(id);
 
-      if (deleted == 0) {
+      if (condition == null || condition.deletedAt != null) {
         return 0;
       }
+
+      final deleted = await _db.conditionsDao.deleteCondition(
+        id: id,
+        userId: condition.userId,
+      );
+
+      if (deleted == 0) return 0;
 
       await _db.outboxDao.insertOutbox(
         OutboxCompanion.insert(
           id: const Uuid().v4(),
+          userId: Value(condition.userId),
           entityType: 'condition',
           entityId: id,
           operation: 'delete',
-          payload: '{}',
+          payload: jsonEncode({'userId': condition.userId}),
           status: 'pending',
           createdAt: DateTime.now(),
         ),

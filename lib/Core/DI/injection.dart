@@ -109,6 +109,7 @@ import '../Sync/Data/Data_Sources/sync_remote_data_source_impl.dart';
 
 import '../../Features/Conditions/Data/Data_Sources/condition_remote_data_source.dart';
 import '../../Features/Conditions/Data/Data_Sources/condition_remote_data_source_impl.dart';
+import '../Sync/Domain/Services/sync_manager.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -148,7 +149,16 @@ void configureDependencies() {
   );
 
   sl.registerLazySingleton<ConditionRemoteDataSource>(
-        () => ConditionRemoteDataSourceImpl(sl<Dio>()),
+    () => ConditionRemoteDataSourceImpl(sl<Dio>()),
+  );
+
+  sl.registerLazySingleton<SyncManager>(
+    () => SyncManager(
+      db: sl<AppDatabase>(),
+      remoteDataSource: sl<SyncRemoteDataSource>(),
+      conditionRemoteDataSource: sl<ConditionRemoteDataSource>(),
+      getCurrentSession: sl<GetCurrentSession>(),
+    ),
   );
 
   sl.registerLazySingleton<UserLocalDataSource>(

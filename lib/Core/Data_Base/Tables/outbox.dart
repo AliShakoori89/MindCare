@@ -1,7 +1,10 @@
+
 import 'package:drift/drift.dart';
 
 class Outbox extends Table {
   TextColumn get id => text()();
+
+  TextColumn get userId => text().nullable()();
 
   TextColumn get entityType => text()();
 
@@ -23,7 +26,7 @@ class Outbox extends Table {
   Set<Column> get primaryKey => {id};
 
   List<Set<Column>> get indexes => [
+    {userId, status, createdAt},
     {entityType, entityId},
-    {status, createdAt},
   ];
 }

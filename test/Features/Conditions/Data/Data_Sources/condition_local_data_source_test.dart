@@ -35,15 +35,9 @@ void main() {
     );
   }
 
-  Future<void> createUser({
-    String id = 'user-1',
-  }) async {
+  Future<void> createUser({String id = 'user-1'}) async {
     await usersDao.insertUser(
-      UsersCompanion.insert(
-        id: id,
-        createdAt: createdAt,
-        updatedAt: updatedAt,
-      ),
+      UsersCompanion.insert(id: id, createdAt: createdAt, updatedAt: updatedAt),
     );
   }
 
@@ -59,7 +53,6 @@ void main() {
 
   group('insertCondition', () {
     test('should insert condition into local database', () async {
-
       await createUser();
 
       final condition = createCondition();
@@ -75,43 +68,36 @@ void main() {
       expect(result.status, 'active');
     });
 
-    test('should create pending outbox entry when inserting condition', () async {
-      await createUser();
+    test(
+      'should create pending outbox entry when inserting condition',
+      () async {
+        await createUser();
 
-      final condition = createCondition();
+        final condition = createCondition();
 
-      await dataSource.insertCondition(condition);
+        await dataSource.insertCondition(condition);
 
-      final entries = await database.outboxDao.getPendingEntries();
+        final entries = await database.outboxDao.getPendingEntries(
+          userId: 'user-1',
+        );
 
-      expect(entries, hasLength(1));
+        expect(entries, hasLength(1));
 
-      final entry = entries.first;
+        final entry = entries.first;
 
-      expect(entry.entityType, 'condition');
-      expect(entry.entityId, 'condition-1');
-      expect(entry.operation, 'create');
-      expect(entry.status, 'pending');
-      expect(entry.attempts, 0);
-      expect(entry.lastError, isNull);
+        expect(entry.entityType, 'condition');
+        expect(entry.entityId, 'condition-1');
+        expect(entry.operation, 'create');
+        expect(entry.status, 'pending');
+        expect(entry.attempts, 0);
+        expect(entry.lastError, isNull);
 
-      expect(
-        entry.payload,
-        contains('"name":"Diabetes"'),
-      );
-      expect(
-        entry.payload,
-        contains('"status":"active"'),
-      );
-      expect(
-        entry.payload,
-        contains('"diagnosedBy":"Dr. Test"'),
-      );
-      expect(
-        entry.payload,
-        contains('"notes":"Test condition"'),
-      );
-    });
+        expect(entry.payload, contains('"name":"Diabetes"'));
+        expect(entry.payload, contains('"status":"active"'));
+        expect(entry.payload, contains('"diagnosedBy":"Dr. Test"'));
+        expect(entry.payload, contains('"notes":"Test condition"'));
+      },
+    );
   });
 
   group('getConditionById', () {
@@ -135,9 +121,7 @@ void main() {
     test('should not return soft-deleted condition', () async {
       await createUser();
       await dataSource.insertCondition(
-        createCondition(
-          deletedAt: DateTime(2026, 1, 2),
-        ),
+        createCondition(deletedAt: DateTime(2026, 1, 2)),
       );
 
       final result = await dataSource.getConditionById('condition-1');
@@ -151,22 +135,14 @@ void main() {
       await createUser();
       await createUser(id: 'user-2');
 
+      await dataSource.insertCondition(createCondition(id: 'condition-1'));
+
       await dataSource.insertCondition(
-        createCondition(id: 'condition-1'),
+        createCondition(id: 'condition-2', name: 'Hypertension'),
       );
 
       await dataSource.insertCondition(
-        createCondition(
-          id: 'condition-2',
-          name: 'Hypertension',
-        ),
-      );
-
-      await dataSource.insertCondition(
-        createCondition(
-          id: 'condition-3',
-          userId: 'user-2',
-        ),
+        createCondition(id: 'condition-3', userId: 'user-2'),
       );
 
       final result = await dataSource.getConditionsByUserId('user-1');
@@ -187,9 +163,7 @@ void main() {
 
     test('should not return soft-deleted conditions', () async {
       await createUser();
-      await dataSource.insertCondition(
-        createCondition(id: 'condition-1'),
-      );
+      await dataSource.insertCondition(createCondition(id: 'condition-1'));
 
       await dataSource.insertCondition(
         createCondition(
@@ -209,9 +183,7 @@ void main() {
   group('updateCondition', () {
     test('should update existing condition', () async {
       await createUser();
-      await dataSource.insertCondition(
-        createCondition(),
-      );
+      await dataSource.insertCondition(createCondition());
 
       final updatedCondition = createCondition(
         name: 'Updated Diabetes',
@@ -222,67 +194,58 @@ void main() {
 
       expect(result, isTrue);
 
-      final condition =
-      await dataSource.getConditionById('condition-1');
+      final condition = await dataSource.getConditionById('condition-1');
 
       expect(condition, isNotNull);
       expect(condition!.name, 'Updated Diabetes');
       expect(condition.status, 'inactive');
     });
 
-    test('should create pending outbox entry when updating condition',
-            () async {
-          await createUser();
+    test(
+      'should create pending outbox entry when updating condition',
+      () async {
+        await createUser();
 
-          await dataSource.insertCondition(
-            createCondition(),
-          );
+        await dataSource.insertCondition(createCondition());
 
-          final updatedCondition = createCondition(
-            name: 'Updated Diabetes',
-            status: 'inactive',
-          );
+        final updatedCondition = createCondition(
+          name: 'Updated Diabetes',
+          status: 'inactive',
+        );
 
-          await dataSource.updateCondition(updatedCondition);
+        await dataSource.updateCondition(updatedCondition);
 
-          final entries = await database.outboxDao.getPendingEntries();
+        final entries = await database.outboxDao.getPendingEntries(
+          userId: 'user-1',
+        );
 
-          expect(entries, hasLength(2));
+        expect(entries, hasLength(2));
 
-          final entry = entries.last;
+        final entry = entries.last;
 
-          expect(entry.entityType, 'condition');
-          expect(entry.entityId, 'condition-1');
-          expect(entry.operation, 'update');
-          expect(entry.status, 'pending');
-          expect(entry.attempts, 0);
-          expect(entry.lastError, isNull);
+        expect(entry.entityType, 'condition');
+        expect(entry.entityId, 'condition-1');
+        expect(entry.operation, 'update');
+        expect(entry.status, 'pending');
+        expect(entry.attempts, 0);
+        expect(entry.lastError, isNull);
 
-          expect(
-            entry.payload,
-            contains('"name":"Updated Diabetes"'),
-          );
-          expect(
-            entry.payload,
-            contains('"status":"inactive"'),
-          );
-        });
-
+        expect(entry.payload, contains('"name":"Updated Diabetes"'));
+        expect(entry.payload, contains('"status":"inactive"'));
+      },
+    );
   });
 
   group('deleteCondition', () {
     test('should soft delete existing condition', () async {
       await createUser();
-      await dataSource.insertCondition(
-        createCondition(),
-      );
+      await dataSource.insertCondition(createCondition());
 
       final result = await dataSource.deleteCondition('condition-1');
 
       expect(result, 1);
 
-      final condition =
-      await dataSource.getConditionById('condition-1');
+      final condition = await dataSource.getConditionById('condition-1');
 
       expect(condition, isNull);
     });
@@ -294,31 +257,33 @@ void main() {
       expect(result, 0);
     });
 
-    test('should create pending outbox entry when deleting condition',
-            () async {
-          await createUser();
+    test(
+      'should create pending outbox entry when deleting condition',
+      () async {
+        await createUser();
 
-          await dataSource.insertCondition(
-            createCondition(),
-          );
+        await dataSource.insertCondition(createCondition());
 
-          final result = await dataSource.deleteCondition('condition-1');
+        final result = await dataSource.deleteCondition('condition-1');
 
-          expect(result, 1);
+        expect(result, 1);
 
-          final entries = await database.outboxDao.getPendingEntries();
+        final entries = await database.outboxDao.getPendingEntries(
+          userId: 'user-1',
+        );
 
-          expect(entries, hasLength(2));
+        expect(entries, hasLength(2));
 
-          final entry = entries.last;
+        final entry = entries.last;
 
-          expect(entry.entityType, 'condition');
-          expect(entry.entityId, 'condition-1');
-          expect(entry.operation, 'delete');
-          expect(entry.status, 'pending');
-          expect(entry.attempts, 0);
-          expect(entry.lastError, isNull);
-          expect(entry.payload, '{}');
-        });
+        expect(entry.entityType, 'condition');
+        expect(entry.entityId, 'condition-1');
+        expect(entry.operation, 'delete');
+        expect(entry.status, 'pending');
+        expect(entry.attempts, 0);
+        expect(entry.lastError, isNull);
+        expect(entry.payload, contains('"userId":"user-1"'));
+      },
+    );
   });
 }

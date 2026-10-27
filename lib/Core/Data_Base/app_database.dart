@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+
 import 'Dao/conditions_dao.dart';
 import 'Dao/conversations_dao.dart';
 import 'Dao/daily_check_ins_dao.dart';
@@ -54,12 +55,12 @@ part 'app_database.g.dart';
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])
-      : super(executor ?? openDatabaseConnection());
+    : super(executor ?? openDatabaseConnection());
 
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -116,7 +117,11 @@ class AppDatabase extends _$AppDatabase {
           'ALTER TABLE sync_cursors_new RENAME TO sync_cursors',
         );
       }
-      },
+
+      if (from < 4) {
+        await m.addColumn(outbox, outbox.userId);
+      }
+    },
 
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');

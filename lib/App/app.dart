@@ -4,6 +4,7 @@ import 'package:mind_care/App/Router/app_router.dart';
 import 'package:mind_care/App/Theme/app_theme.dart';
 
 import '../Core/DI/injection.dart';
+import '../Core/Sync/Presentation/sync_listener.dart';
 import '../Features/Authentication/Presentation/Bloc/auth_bloc.dart';
 import '../Features/Journal/Presentation/Bloc/journal_Bloc/journal_bloc.dart';
 
@@ -17,18 +18,19 @@ class MindCareApp extends StatelessWidget {
         BlocProvider<AuthBloc>.value(value: sl<AuthBloc>()),
         BlocProvider(create: (_) => sl<JournalBloc>()),
       ],
-      child: MaterialApp.router(
-        debugShowCheckedModeBanner: false,
-        title: 'MindCare',
-        theme: AppTheme.light(),
-        routerConfig: appRouter,
-
-        builder: (context, child) {
-          return Directionality(
-            textDirection: TextDirection.rtl,
-            child: child ?? const SizedBox.shrink(),
-          );
-        },
+      child: SyncListener(
+        child: MaterialApp.router(
+          debugShowCheckedModeBanner: false,
+          title: 'MindCare',
+          theme: AppTheme.light(),
+          routerConfig: appRouter,
+          builder: (context, child) {
+            return Directionality(
+              textDirection: TextDirection.rtl,
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
+        ),
       ),
     );
   }

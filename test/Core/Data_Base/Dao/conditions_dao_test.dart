@@ -105,7 +105,7 @@ void main() {
 
       await conditionsDao.insertCondition(createCondition());
 
-      await conditionsDao.deleteCondition(conditionId);
+      await conditionsDao.deleteCondition(id: conditionId, userId: userId);
 
       final conditions = await conditionsDao.getConditionsByUserId(userId);
 
@@ -118,7 +118,7 @@ void main() {
 
     await conditionsDao.insertCondition(createCondition());
 
-    await conditionsDao.deleteCondition(conditionId);
+    await conditionsDao.deleteCondition(id: conditionId, userId: userId);
 
     final condition = await conditionsDao.getConditionById(conditionId);
 
@@ -130,7 +130,10 @@ void main() {
 
     await conditionsDao.insertCondition(createCondition());
 
-    final deletedRows = await conditionsDao.deleteCondition(conditionId);
+    final deletedRows = await conditionsDao.deleteCondition(
+      id: conditionId,
+      userId: userId,
+    );
 
     expect(deletedRows, 1);
 
@@ -154,6 +157,7 @@ void main() {
 
       final deletedRows = await conditionsDao.applyRemoteDeleteCondition(
         id: conditionId,
+        userId: userId,
         deletedAt: serverDeletedAt,
       );
 
@@ -170,6 +174,30 @@ void main() {
 
       // Remote changes must remain hidden from normal local reads.
       expect(await conditionsDao.getConditionById(conditionId), isNull);
+    },
+  );
+
+  test(
+    'applyRemoteDeleteCondition should not delete another user condition',
+    () async {
+      await createUser();
+
+      await conditionsDao.insertCondition(createCondition());
+
+      final serverDeletedAt = DateTime(2026, 3, 15, 10, 30);
+
+      final deletedRows = await conditionsDao.applyRemoteDeleteCondition(
+        id: conditionId,
+        userId: 'another-user',
+        deletedAt: serverDeletedAt,
+      );
+
+      expect(deletedRows, 0);
+
+      final condition = await conditionsDao.getConditionById(conditionId);
+
+      expect(condition, isNotNull);
+      expect(condition!.deletedAt, isNull);
     },
   );
 
