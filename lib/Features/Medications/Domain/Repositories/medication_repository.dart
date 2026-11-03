@@ -9,5 +9,8 @@ abstract interface class MedicationRepository {
 
   Future<void> updateMedication(Medication medication);
 
-  Future<void> deleteMedication(String id);
+  Future<void> deleteMedication({
+    required String id,
+    required String userId,
+  });
 }

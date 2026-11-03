@@ -105,7 +105,10 @@ class MedicationBloc
     emit(const MedicationLoading());
 
     try {
-      await _deleteMedication(event.id);
+      await _deleteMedication(
+        id: event.id,
+        userId: event.userId,
+      );
 
       emit(const MedicationDeleted());
     } catch (e) {

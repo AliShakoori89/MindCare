@@ -54,9 +54,13 @@ class MedicationRepositoryImpl
   }
 
   @override
-  Future<void> deleteMedication(
-      String id,
-      ) async {
-    await _localDataSource.deleteMedication(id);
+  Future<void> deleteMedication({
+    required String id,
+    required String userId,
+  }) async {
+    await _localDataSource.deleteMedication(
+      id: id,
+      userId: userId,
+    );
   }
 }

@@ -5,7 +5,13 @@ class DeleteMedication {
 
   DeleteMedication(this._repository);
 
-  Future<void> call(String id) {
-    return _repository.deleteMedication(id);
+  Future<void> call({
+    required String id,
+    required String userId,
+  }) {
+    return _repository.deleteMedication(
+      id: id,
+      userId: userId,
+    );
   }
 }

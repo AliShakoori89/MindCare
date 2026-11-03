@@ -14,9 +14,13 @@ import 'package:mind_care/Features/Authentication/Presentation/Bloc/auth_bloc.da
 import 'package:mind_care/Features/Authentication/Presentation/Bloc/auth_event.dart';
 import 'package:mind_care/Features/Authentication/Presentation/Bloc/auth_state.dart';
 
+import 'package:mind_care/Core/Network/connectivity_service.dart';
+
 class MockAuthBloc extends MockBloc<AuthEvent, AuthState> implements AuthBloc {}
 
 class MockSyncManager extends Mock implements SyncManager {}
+
+class MockConnectivityService extends Mock implements ConnectivityService {}
 
 enum AuthStateForTest { initial, second }
 
@@ -25,6 +29,7 @@ void main() {
 
   late MockAuthBloc authBloc;
   late MockSyncManager syncManager;
+  late MockConnectivityService connectivityService;
 
   const session = AuthSession(
     userId: 'user-1',
@@ -37,11 +42,18 @@ void main() {
 
     authBloc = MockAuthBloc();
     syncManager = MockSyncManager();
+    connectivityService = MockConnectivityService();
 
     sl.registerSingleton<SyncManager>(syncManager);
+    sl.registerSingleton<ConnectivityService>(connectivityService);
 
     when(() => syncManager.pushChanges()).thenAnswer((_) async {});
     when(() => syncManager.pullChanges()).thenAnswer((_) async {});
+    when(() => connectivityService.isConnected)
+        .thenAnswer((_) => const Stream<bool>.empty());
+    when(() => connectivityService.checkConnection())
+        .thenAnswer((_) async => true);
+
   });
 
   tearDown(() async {

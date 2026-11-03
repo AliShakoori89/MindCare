@@ -111,6 +111,11 @@ import '../../Features/Conditions/Data/Data_Sources/condition_remote_data_source
 import '../../Features/Conditions/Data/Data_Sources/condition_remote_data_source_impl.dart';
 import '../Sync/Domain/Services/sync_manager.dart';
 
+import '../../Features/Medications/Data/Data_Sources/medication_remote_data_source.dart';
+import '../../Features/Medications/Data/Data_Sources/medication_remote_data_source_impl.dart';
+
+import 'package:mind_care/Core/Network/connectivity_service.dart';
+
 final GetIt sl = GetIt.instance;
 
 void configureDependencies() {
@@ -122,6 +127,10 @@ void configureDependencies() {
         return session?.accessToken;
       },
     ),
+  );
+
+  sl.registerLazySingleton<ConnectivityService>(
+        () => ConnectivityService(),
   );
 
   // Secure Storage for authentication session
@@ -152,12 +161,17 @@ void configureDependencies() {
     () => ConditionRemoteDataSourceImpl(sl<Dio>()),
   );
 
+  sl.registerLazySingleton<MedicationRemoteDataSource>(
+        () => MedicationRemoteDataSourceImpl(sl<Dio>()),
+  );
+
   sl.registerLazySingleton<SyncManager>(
     () => SyncManager(
       db: sl<AppDatabase>(),
       remoteDataSource: sl<SyncRemoteDataSource>(),
       conditionRemoteDataSource: sl<ConditionRemoteDataSource>(),
       getCurrentSession: sl<GetCurrentSession>(),
+      medicationRemoteDataSource: sl<MedicationRemoteDataSource>(),
     ),
   );
 
@@ -279,7 +293,7 @@ void configureDependencies() {
   );
 
   sl.registerLazySingleton<MedicationLocalDataSource>(
-    () => MedicationLocalDataSourceImpl(sl<MedicationsDao>()),
+    () => MedicationLocalDataSourceImpl(sl<AppDatabase>()),
   );
 
   sl.registerLazySingleton<MedicationRepository>(

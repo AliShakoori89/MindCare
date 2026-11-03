@@ -17,7 +17,8 @@ abstract interface class MedicationLocalDataSource {
       MedicationsCompanion medication,
       );
 
-  Future<int> deleteMedication(
-      String id,
-      );
+  Future<int> deleteMedication({
+    required String id,
+    required String userId,
+  });
 }

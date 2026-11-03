@@ -138,7 +138,8 @@ void main() {
       );
 
       await dao.deleteMedication(
-        'medication-1',
+        id: 'medication-1',
+        userId: userId,
       );
 
       final result = await dao.getMedicationsByUserId(
@@ -159,7 +160,8 @@ void main() {
       );
 
       await dao.deleteMedication(
-        'medication-1',
+        id: 'medication-1',
+        userId: userId,
       );
 
       final result = await dao.getMedicationById(
@@ -180,7 +182,8 @@ void main() {
       );
 
       final deletedCount = await dao.deleteMedication(
-        'medication-1',
+        id: 'medication-1',
+        userId: userId,
       );
 
       expect(deletedCount, 1);

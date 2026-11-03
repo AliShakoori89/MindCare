@@ -185,4 +185,59 @@ void main() {
     expect(await outboxDao.getById('condition-2'), isNotNull);
     expect(await outboxDao.getById('journal-1'), isNotNull);
   });
+
+  test('hasPendingOperation should return true for matching pending entry',
+          () async {
+        await outboxDao.insertOutbox(createEntry());
+
+        final result = await outboxDao.hasPendingOperation(
+          userId: 'user-1',
+          entityType: 'condition',
+          entityId: 'condition-1',
+        );
+
+        expect(result, isTrue);
+      });
+
+  test('hasPendingOperation should return false for another user or entity',
+          () async {
+        await outboxDao.insertOutbox(createEntry());
+
+        final differentUser = await outboxDao.hasPendingOperation(
+          userId: 'user-2',
+          entityType: 'condition',
+          entityId: 'condition-1',
+        );
+
+        final differentEntity = await outboxDao.hasPendingOperation(
+          userId: 'user-1',
+          entityType: 'condition',
+          entityId: 'condition-2',
+        );
+
+        final differentType = await outboxDao.hasPendingOperation(
+          userId: 'user-1',
+          entityType: 'medication',
+          entityId: 'condition-1',
+        );
+
+        expect(differentUser, isFalse);
+        expect(differentEntity, isFalse);
+        expect(differentType, isFalse);
+      });
+
+  test('hasPendingOperation should return false for non-pending entries',
+          () async {
+        await outboxDao.insertOutbox(
+          createEntry(status: 'processing'),
+        );
+
+        final result = await outboxDao.hasPendingOperation(
+          userId: 'user-1',
+          entityType: 'condition',
+          entityId: 'condition-1',
+        );
+
+        expect(result, isFalse);
+      });
 }

@@ -79,15 +79,18 @@ class FakeMedicationRepository implements MedicationRepository {
   }
 
   @override
-  Future<void> deleteMedication(
-      String id,
-      ) async {
+  Future<void> deleteMedication({
+    required String id,
+    required String userId,
+  }) async {
     if (shouldThrow) {
       throw Exception('Delete medication failed');
     }
 
     medications.removeWhere(
-          (medication) => medication.id == id,
+          (medication) =>
+      medication.id == id &&
+          medication.userId == userId,
     );
   }
 }
@@ -374,7 +377,8 @@ void main() {
       act: (bloc) {
         bloc.add(
           const DeleteMedicationEvent(
-            medicationId,
+            id: medicationId,
+            userId: userId,
           ),
         );
       },
@@ -398,7 +402,8 @@ void main() {
       act: (bloc) {
         bloc.add(
           const DeleteMedicationEvent(
-            medicationId,
+            id: medicationId,
+            userId: userId,
           ),
         );
       },

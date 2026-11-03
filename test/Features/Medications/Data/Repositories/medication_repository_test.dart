@@ -1,6 +1,5 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mind_care/Core/Data_Base/Dao/medications_dao.dart';
 import 'package:mind_care/Core/Data_Base/Dao/users_dao.dart';
 import 'package:mind_care/Core/Data_Base/app_database.dart' as db;
 import 'package:mind_care/Features/Medications/Data/Data_Sources/medication_local_data_source.dart';
@@ -12,7 +11,6 @@ as domain;
 void main() {
   late db.AppDatabase database;
   late UsersDao usersDao;
-  late MedicationsDao medicationsDao;
   late MedicationLocalDataSource localDataSource;
   late MedicationRepositoryImpl repository;
 
@@ -62,10 +60,9 @@ void main() {
     );
 
     usersDao = UsersDao(database);
-    medicationsDao = MedicationsDao(database);
 
     localDataSource = MedicationLocalDataSourceImpl(
-      medicationsDao,
+      database,
     );
 
     repository = MedicationRepositoryImpl(
@@ -186,7 +183,8 @@ void main() {
       );
 
       await repository.deleteMedication(
-        medicationId,
+        id: medicationId,
+        userId: userId,
       );
 
       final result = await repository.getMedicationById(
@@ -207,7 +205,8 @@ void main() {
       );
 
       await repository.deleteMedication(
-        medicationId,
+        id: medicationId,
+        userId: userId,
       );
 
       final result = await repository.getMedicationsByUserId(

@@ -11,18 +11,25 @@ import 'package:mind_care/Features/Conditions/Data/Data_Sources/condition_remote
 
 import 'dart:convert';
 
+import 'package:mind_care/Features/Medications/Data/Data_Sources/medication_remote_data_source.dart';
+import 'package:mind_care/Features/Medications/Data/Models/medication_model.dart';
+import 'package:mind_care/Features/Medications/Data/Mappers/medication_mapper.dart';
+
 class SyncManager {
   final AppDatabase _db;
   final SyncRemoteDataSource _remoteDataSource;
   final GetCurrentSession _getCurrentSession;
   final ConditionRemoteDataSource _conditionRemoteDataSource;
+  final MedicationRemoteDataSource _medicationRemoteDataSource;
 
   SyncManager({
     required this._db,
     required this._remoteDataSource,
     required this._getCurrentSession,
     required this._conditionRemoteDataSource,
+    required this._medicationRemoteDataSource,
   });
+
 
   Future<void> pullChanges() async {
     final session = await _getCurrentSession();
@@ -39,44 +46,107 @@ class SyncManager {
 
     await _db.transaction(() async {
       for (final change in response.changes) {
-        if (change.entity != 'condition') {
-          throw UnsupportedError('Unsupported sync entity: ${change.entity}');
+        final hasPendingOperation =
+        await _db.outboxDao.hasPendingOperation(
+          userId: session.userId,
+          entityType: change.entity,
+          entityId: change.id,
+        );
+
+        if (hasPendingOperation) {
+          continue;
         }
 
-        switch (change.operation) {
-          case 'created':
-          case 'updated':
-            final data = change.data;
-            if (data == null) {
-              throw FormatException('Missing data for condition ${change.id}.');
+        switch (change.entity) {
+          case 'condition':
+            switch (change.operation) {
+              case 'created':
+              case 'updated':
+                final data = change.data;
+
+                if (data == null) {
+                  throw FormatException(
+                    'Missing data for condition ${change.id}.',
+                  );
+                }
+
+                final model = ConditionModel.fromJson(data);
+
+                if (model.id != change.id) {
+                  throw FormatException(
+                    'Condition ID does not match sync change ID.',
+                  );
+                }
+
+                if (model.userId != session.userId) {
+                  throw FormatException(
+                    'Condition belongs to a different user.',
+                  );
+                }
+
+                await _db.conditionsDao.applyRemoteCondition(
+                  ConditionMapper.modelToCompanion(model),
+                );
+
+              case 'deleted':
+                await _db.conditionsDao.applyRemoteDeleteCondition(
+                  id: change.id,
+                  userId: session.userId,
+                  deletedAt: change.timestamp,
+                );
+
+              default:
+                throw UnsupportedError(
+                  'Unsupported sync operation: ${change.operation}',
+                );
             }
 
-            final model = ConditionModel.fromJson(data);
+          case 'medication':
+            switch (change.operation) {
+              case 'created':
+              case 'updated':
+                final data = change.data;
 
-            if (model.id != change.id) {
-              throw FormatException(
-                'Condition ID does not match sync change ID.',
-              );
+                if (data == null) {
+                  throw FormatException(
+                    'Missing data for medication ${change.id}.',
+                  );
+                }
+
+                final model = MedicationModel.fromJson(data);
+
+                if (model.id != change.id) {
+                  throw FormatException(
+                    'Medication ID does not match sync change ID.',
+                  );
+                }
+
+                if (model.userId != session.userId) {
+                  throw FormatException(
+                    'Medication belongs to a different user.',
+                  );
+                }
+
+                await _db.medicationsDao.applyRemoteMedication(
+                  MedicationMapper.modelToCompanion(model),
+                );
+
+              case 'deleted':
+                await _db.medicationsDao.applyRemoteDeleteMedication(
+                  id: change.id,
+                  userId: session.userId,
+                  deletedAt: change.timestamp,
+                );
+
+              default:
+                throw UnsupportedError(
+                  'Unsupported sync operation: ${change.operation}',
+                );
             }
-
-            if (model.userId != session.userId) {
-              throw FormatException('Condition belongs to a different user.');
-            }
-
-            await _db.conditionsDao.applyRemoteCondition(
-              ConditionMapper.modelToCompanion(model),
-            );
-
-          case 'deleted':
-            await _db.conditionsDao.applyRemoteDeleteCondition(
-              id: change.id,
-              userId: session.userId,
-              deletedAt: change.timestamp,
-            );
 
           default:
             throw UnsupportedError(
-              'Unsupported sync operation: ${change.operation}',
+              'Unsupported sync entity: ${change.entity}',
             );
         }
       }
@@ -92,6 +162,7 @@ class SyncManager {
     });
   }
 
+
   Future<void> pushChanges() async {
     final session = await _getCurrentSession();
 
@@ -103,8 +174,6 @@ class SyncManager {
       userId: session.userId,
     );
 
-    // اگر ارسال یک رویداد شکست خورد، رویدادهای بعدی همان
-    // Condition را تا تلاش بعدی ارسال نکن.
     final blockedEntities = <String>{};
 
     for (final entry in entries) {
@@ -115,127 +184,25 @@ class SyncManager {
       }
 
       try {
-        if (entry.entityType != 'condition') {
-          throw UnsupportedError(
-            'Unsupported sync entity: ${entry.entityType}',
-          );
-        }
+        switch (entry.entityType) {
+          case 'condition':
+            await _pushConditionEntry(
+              entry: entry,
+              userId: session.userId,
+            );
 
-        // رکورد باید در دیتابیس محلی وجود داشته باشد؛
-        // حتی اگر به‌صورت Soft Delete حذف شده باشد.
-        final localCondition = await _db.conditionsDao
-            .getConditionByIdIncludingDeleted(entry.entityId);
-
-        if (localCondition == null) {
-          throw StateError('Local condition ${entry.entityId} does not exist.');
-        }
-
-        if (localCondition.userId != session.userId) {
-          throw StateError('Condition belongs to a different user.');
-        }
-
-        switch (entry.operation) {
-          case 'create':
-          case 'update':
-            final decoded = jsonDecode(entry.payload);
-
-            if (decoded is! Map) {
-              throw const FormatException(
-                'Outbox payload must be a JSON object.',
-              );
-            }
-
-            final payload = Map<String, dynamic>.from(decoded);
-
-            if (payload['userId'] != session.userId) {
-              throw StateError('Outbox payload belongs to a different user.');
-            }
-
-            final name = payload['name'];
-            final status = payload['status'];
-
-            if (name is! String || name.trim().isEmpty) {
-              throw const FormatException('Missing or invalid condition name.');
-            }
-
-            if (status is! String || status.trim().isEmpty) {
-              throw const FormatException(
-                'Missing or invalid condition status.',
-              );
-            }
-
-            final rawDiagnosedAt = payload['diagnosedAt'];
-            DateTime? diagnosedAt;
-
-            if (rawDiagnosedAt != null) {
-              if (rawDiagnosedAt is! String) {
-                throw const FormatException('Invalid diagnosedAt value.');
-              }
-
-              diagnosedAt = DateTime.tryParse(rawDiagnosedAt);
-
-              if (diagnosedAt == null) {
-                throw const FormatException('Invalid diagnosedAt date.');
-              }
-            }
-
-            final diagnosedBy = payload['diagnosedBy'];
-            final notes = payload['notes'];
-
-            if (diagnosedBy != null && diagnosedBy is! String) {
-              throw const FormatException('Invalid diagnosedBy value.');
-            }
-
-            if (notes != null && notes is! String) {
-              throw const FormatException('Invalid notes value.');
-            }
-
-            if (entry.operation == 'create') {
-              await _conditionRemoteDataSource.createCondition(
-                id: entry.entityId,
-                name: name,
-                status: status,
-                diagnosedAt: diagnosedAt,
-                diagnosedBy: diagnosedBy as String?,
-                notes: notes as String?,
-              );
-            } else {
-              await _conditionRemoteDataSource.updateCondition(
-                id: entry.entityId,
-                name: name,
-                status: status,
-                diagnosedAt: diagnosedAt,
-                diagnosedBy: diagnosedBy as String?,
-                notes: notes as String?,
-              );
-            }
-
-          case 'delete':
-            final decoded = jsonDecode(entry.payload);
-
-            if (decoded is! Map) {
-              throw const FormatException(
-                'Outbox payload must be a JSON object.',
-              );
-            }
-
-            final payload = Map<String, dynamic>.from(decoded);
-
-            if (payload['userId'] != session.userId) {
-              throw StateError(
-                'Outbox payload belongs to a different user.',
-              );
-            }
-
-            await _conditionRemoteDataSource.deleteCondition(entry.entityId);
+          case 'medication':
+            await _pushMedicationEntry(
+              entry: entry,
+              userId: session.userId,
+            );
 
           default:
             throw UnsupportedError(
-              'Unsupported sync operation: ${entry.operation}',
+              'Unsupported sync entity: ${entry.entityType}',
             );
         }
 
-        // فقط پس از موفقیت عملیات Remote، رویداد را حذف کن.
         await _db.outboxDao.deleteById(entry.id);
       } catch (error) {
         blockedEntities.add(entityKey);
@@ -248,4 +215,304 @@ class SyncManager {
       }
     }
   }
+
+  Future<void> _pushConditionEntry({
+    required OutboxData entry,
+    required String userId,
+  }) async {
+    final localCondition = await _db.conditionsDao
+        .getConditionByIdIncludingDeleted(entry.entityId);
+
+    if (localCondition == null) {
+      throw StateError(
+        'Local condition ${entry.entityId} does not exist.',
+      );
+    }
+
+    if (localCondition.userId != userId) {
+      throw StateError('Condition belongs to a different user.');
+    }
+
+    switch (entry.operation) {
+      case 'create':
+      case 'update':
+        final payload = _decodePayload(entry.payload);
+
+        _validatePayloadUser(payload, userId);
+
+        final name = payload['name'];
+        final status = payload['status'];
+
+        if (name is! String || name.trim().isEmpty) {
+          throw const FormatException(
+            'Missing or invalid condition name.',
+          );
+        }
+
+        if (status is! String || status.trim().isEmpty) {
+          throw const FormatException(
+            'Missing or invalid condition status.',
+          );
+        }
+
+        final diagnosedAt = _parseOptionalDate(
+          payload['diagnosedAt'],
+          'diagnosedAt',
+        );
+
+        final diagnosedBy = _optionalString(
+          payload['diagnosedBy'],
+          'diagnosedBy',
+        );
+
+        final notes = _optionalString(
+          payload['notes'],
+          'notes',
+        );
+
+        if (entry.operation == 'create') {
+          await _conditionRemoteDataSource.createCondition(
+            id: entry.entityId,
+            name: name,
+            status: status,
+            diagnosedAt: diagnosedAt,
+            diagnosedBy: diagnosedBy,
+            notes: notes,
+          );
+        } else {
+          await _conditionRemoteDataSource.updateCondition(
+            id: entry.entityId,
+            name: name,
+            status: status,
+            diagnosedAt: diagnosedAt,
+            diagnosedBy: diagnosedBy,
+            notes: notes,
+          );
+        }
+
+      case 'delete':
+        final payload = _decodePayload(entry.payload);
+
+        _validatePayloadUser(payload, userId);
+
+        await _conditionRemoteDataSource.deleteCondition(
+          entry.entityId,
+        );
+
+      default:
+        throw UnsupportedError(
+          'Unsupported sync operation: ${entry.operation}',
+        );
+    }
+  }
+
+  Map<String, dynamic> _decodePayload(String rawPayload) {
+    final decoded = jsonDecode(rawPayload);
+
+    if (decoded is! Map) {
+      throw const FormatException(
+        'Outbox payload must be a JSON object.',
+      );
+    }
+
+    return Map<String, dynamic>.from(decoded);
+  }
+
+  void _validatePayloadUser(
+      Map<String, dynamic> payload,
+      String userId,
+      ) {
+    if (payload['userId'] != userId) {
+      throw StateError(
+        'Outbox payload belongs to a different user.',
+      );
+    }
+  }
+
+  String? _optionalString(
+      dynamic value,
+      String fieldName,
+      ) {
+    if (value == null) {
+      return null;
+    }
+
+    if (value is! String) {
+      throw FormatException(
+        'Invalid $fieldName value.',
+      );
+    }
+
+    return value;
+  }
+
+  DateTime? _parseOptionalDate(
+      dynamic value,
+      String fieldName,
+      ) {
+    if (value == null) {
+      return null;
+    }
+
+    if (value is! String) {
+      throw FormatException(
+        'Invalid $fieldName value.',
+      );
+    }
+
+    final date = DateTime.tryParse(value);
+
+    if (date == null) {
+      throw FormatException(
+        'Invalid $fieldName date.',
+      );
+    }
+
+    return date;
+  }
+
+  Future<void> _pushMedicationEntry({
+    required OutboxData entry,
+    required String userId,
+  }) async {
+    final localMedication = await _db.medicationsDao
+        .getMedicationByIdIncludingDeleted(entry.entityId);
+
+    if (localMedication == null) {
+      throw StateError(
+        'Local medication ${entry.entityId} does not exist.',
+      );
+    }
+
+    if (localMedication.userId != userId) {
+      throw StateError('Medication belongs to a different user.');
+    }
+
+    switch (entry.operation) {
+      case 'create':
+      case 'update':
+        final payload = _decodePayload(entry.payload);
+
+        _validatePayloadUser(payload, userId);
+
+        final name = payload['name'];
+        final frequencyType = payload['frequencyType'];
+        final route = payload['route'];
+        final status = payload['status'];
+
+        if (name is! String || name.trim().isEmpty) {
+          throw const FormatException(
+            'Missing or invalid medication name.',
+          );
+        }
+
+        if (frequencyType is! String ||
+            frequencyType.trim().isEmpty) {
+          throw const FormatException(
+            'Missing or invalid medication frequencyType.',
+          );
+        }
+
+        if (route is! String || route.trim().isEmpty) {
+          throw const FormatException(
+            'Missing or invalid medication route.',
+          );
+        }
+
+        if (status is! String || status.trim().isEmpty) {
+          throw const FormatException(
+            'Missing or invalid medication status.',
+          );
+        }
+
+        final genericName = _optionalString(
+          payload['genericName'],
+          'genericName',
+        );
+
+        final dosage = _optionalString(
+          payload['dosage'],
+          'dosage',
+        );
+
+        final unit = _optionalString(
+          payload['unit'],
+          'unit',
+        );
+
+        final frequencyValue = _optionalString(
+          payload['frequencyValue'],
+          'frequencyValue',
+        );
+
+        final prescribedBy = _optionalString(
+          payload['prescribedBy'],
+          'prescribedBy',
+        );
+
+        final notes = _optionalString(
+          payload['notes'],
+          'notes',
+        );
+
+        final startDate = _parseOptionalDate(
+          payload['startDate'],
+          'startDate',
+        );
+
+        final endDate = _parseOptionalDate(
+          payload['endDate'],
+          'endDate',
+        );
+
+        if (entry.operation == 'create') {
+          await _medicationRemoteDataSource.createMedication(
+            id: entry.entityId,
+            name: name,
+            genericName: genericName,
+            dosage: dosage,
+            unit: unit,
+            frequencyType: frequencyType,
+            frequencyValue: frequencyValue,
+            route: route,
+            startDate: startDate,
+            endDate: endDate,
+            status: status,
+            prescribedBy: prescribedBy,
+            notes: notes,
+          );
+        } else {
+          await _medicationRemoteDataSource.updateMedication(
+            id: entry.entityId,
+            name: name,
+            genericName: genericName,
+            dosage: dosage,
+            unit: unit,
+            frequencyType: frequencyType,
+            frequencyValue: frequencyValue,
+            route: route,
+            startDate: startDate,
+            endDate: endDate,
+            status: status,
+            prescribedBy: prescribedBy,
+            notes: notes,
+          );
+        }
+
+      case 'delete':
+        final payload = _decodePayload(entry.payload);
+
+        _validatePayloadUser(payload, userId);
+
+        await _medicationRemoteDataSource.deleteMedication(
+          entry.entityId,
+        );
+
+      default:
+        throw UnsupportedError(
+          'Unsupported sync operation: ${entry.operation}',
+        );
+    }
+  }
+
 }

@@ -23,6 +23,25 @@ class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
         .get();
   }
 
+  Future<bool> hasPendingOperation({
+    required String userId,
+    required String entityType,
+    required String entityId,
+  }) async {
+    final entry = await (select(outbox)
+      ..where(
+            (entry) =>
+        entry.userId.equals(userId) &
+        entry.entityType.equals(entityType) &
+        entry.entityId.equals(entityId) &
+        entry.status.equals('pending'),
+      )
+      ..limit(1))
+        .getSingleOrNull();
+
+    return entry != null;
+  }
+
   Future<OutboxData?> getById(String id) {
     return (select(
       outbox,

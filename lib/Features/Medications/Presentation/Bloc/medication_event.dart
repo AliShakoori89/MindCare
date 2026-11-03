@@ -30,6 +30,10 @@ final class UpdateMedicationEvent extends MedicationEvent {
 
 final class DeleteMedicationEvent extends MedicationEvent {
   final String id;
+  final String userId;
 
-  const DeleteMedicationEvent(this.id);
+  const DeleteMedicationEvent({
+    required this.id,
+    required this.userId,
+  });
 }

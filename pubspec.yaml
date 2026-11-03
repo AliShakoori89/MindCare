@@ -50,6 +50,7 @@ dependencies:
   persian_number_utility: ^1.1.6
   flutter_secure_storage: ^11.2.0
   uuid: ^4.6.0
+  connectivity_plus: ^7.3.2
 
 dev_dependencies:
   flutter_test:
