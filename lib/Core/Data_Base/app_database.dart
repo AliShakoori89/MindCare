@@ -60,7 +60,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -120,6 +120,42 @@ class AppDatabase extends _$AppDatabase {
 
       if (from < 4) {
         await m.addColumn(outbox, outbox.userId);
+      }
+
+      if (from < 5) {
+        final tables = await customSelect(
+          "SELECT name FROM sqlite_master WHERE type = 'table'",
+        ).get();
+
+        final tableNames = tables
+            .map((row) => row.read<String>('name'))
+            .toSet();
+
+        if (tableNames.contains('conditions')) {
+          await m.addColumn(conditions, conditions.version);
+        }
+
+        if (tableNames.contains('medications')) {
+          await m.addColumn(medications, medications.version);
+        }
+
+        if (tableNames.contains('outbox')) {
+          await m.addColumn(outbox, outbox.baseVersion);
+        }
+      }
+
+      if (from < 6) {
+        final tables = await customSelect(
+          "SELECT name FROM sqlite_master WHERE type = 'table'",
+        ).get();
+
+        final tableNames = tables
+            .map((row) => row.read<String>('name'))
+            .toSet();
+
+        if (tableNames.contains('outbox')) {
+          await m.addColumn(outbox, outbox.conflictPayload);
+        }
       }
     },
 

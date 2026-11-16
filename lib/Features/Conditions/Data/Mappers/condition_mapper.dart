@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
-import 'package:mind_care/Core/Data_Base/app_database.dart'as db;
-import 'package:mind_care/Features/Conditions/Domain/Entities/condition.dart'as domain;
+import 'package:mind_care/Core/Data_Base/app_database.dart' as db;
+import 'package:mind_care/Features/Conditions/Domain/Entities/condition.dart'
+    as domain;
 import 'package:mind_care/Features/Conditions/Data/Models/condition_model.dart';
 
 class ConditionMapper {
@@ -16,6 +17,7 @@ class ConditionMapper {
       createdAt: condition.createdAt,
       updatedAt: condition.updatedAt,
       deletedAt: condition.deletedAt,
+      version: condition.version,
     );
   }
 
@@ -31,6 +33,7 @@ class ConditionMapper {
       createdAt: model.createdAt,
       updatedAt: model.updatedAt,
       deletedAt: model.deletedAt,
+      version: model.version,
     );
   }
 
@@ -50,6 +53,7 @@ class ConditionMapper {
       createdAt: Value(condition.createdAt),
       updatedAt: Value(condition.updatedAt),
       deletedAt: Value(condition.deletedAt),
+      version: Value(condition.version),
     );
   }
 }

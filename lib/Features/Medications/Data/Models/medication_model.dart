@@ -1,4 +1,3 @@
-
 class MedicationModel {
   final String id;
   final String userId;
@@ -17,6 +16,7 @@ class MedicationModel {
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
+  final int version;
 
   const MedicationModel({
     required this.id,
@@ -36,6 +36,7 @@ class MedicationModel {
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
+    this.version = 1,
   });
 
   factory MedicationModel.fromJson(Map<String, dynamic> json) {
@@ -63,6 +64,7 @@ class MedicationModel {
       deletedAt: json['deletedAt'] == null
           ? null
           : DateTime.parse(json['deletedAt'] as String),
+      version: json['version'] as int? ?? 1,
     );
   }
 
@@ -85,6 +87,7 @@ class MedicationModel {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'deletedAt': deletedAt?.toIso8601String(),
+      'version': version,
     };
   }
 }

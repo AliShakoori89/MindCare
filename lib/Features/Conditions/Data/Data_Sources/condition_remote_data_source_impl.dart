@@ -72,6 +72,7 @@ class ConditionRemoteDataSourceImpl implements ConditionRemoteDataSource {
     DateTime? diagnosedAt,
     String? diagnosedBy,
     String? notes,
+    required int expectedVersion,
   }) async {
     final response = await _dio.put(
       '/conditions/$id',
@@ -81,6 +82,7 @@ class ConditionRemoteDataSourceImpl implements ConditionRemoteDataSource {
         'diagnosedAt': diagnosedAt?.toIso8601String(),
         'diagnosedBy': diagnosedBy,
         'notes': notes,
+        'expectedVersion': expectedVersion,
       },
     );
 

@@ -1,7 +1,7 @@
-
 import 'package:drift/drift.dart';
 import 'package:mind_care/Core/Data_Base/app_database.dart' as db;
 import 'package:mind_care/Features/Medications/Domain/Entities/medication.dart';
+
 import '../Models/medication_model.dart';
 
 class MedicationMapper {
@@ -24,12 +24,11 @@ class MedicationMapper {
       createdAt: medication.createdAt,
       updatedAt: medication.updatedAt,
       deletedAt: medication.deletedAt,
+      version: medication.version,
     );
   }
 
-  static db.MedicationsCompanion toCompanion(
-      Medication medication,
-      ) {
+  static db.MedicationsCompanion toCompanion(Medication medication) {
     return db.MedicationsCompanion(
       id: Value(medication.id),
       userId: Value(medication.userId),
@@ -48,12 +47,11 @@ class MedicationMapper {
       createdAt: Value(medication.createdAt),
       updatedAt: Value(medication.updatedAt),
       deletedAt: Value(medication.deletedAt),
+      version: Value(medication.version),
     );
   }
 
-  static db.MedicationsCompanion modelToCompanion(
-      MedicationModel model,
-      ) {
+  static db.MedicationsCompanion modelToCompanion(MedicationModel model) {
     return db.MedicationsCompanion(
       id: Value(model.id),
       userId: Value(model.userId),
@@ -72,6 +70,7 @@ class MedicationMapper {
       createdAt: Value(model.createdAt),
       updatedAt: Value(model.updatedAt),
       deletedAt: Value(model.deletedAt),
+      version: Value(model.version),
     );
   }
 }

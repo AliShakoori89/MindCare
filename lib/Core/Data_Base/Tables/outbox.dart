@@ -29,4 +29,8 @@ class Outbox extends Table {
     {userId, status, createdAt},
     {entityType, entityId},
   ];
+
+  IntColumn get baseVersion => integer().nullable()();
+
+  TextColumn get conflictPayload => text().nullable()();
 }

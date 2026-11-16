@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mind_care/Core/Data_Base/app_database.dart';
 import 'package:mind_care/Features/Conditions/Data/Data_Sources/condition_local_data_source_impl.dart';
 import 'package:mind_care/Core/Data_Base/Dao/users_dao.dart';
+import 'package:mind_care/Core/Data_Base/Dao/conditions_dao.dart';
 
 void main() {
   late AppDatabase database;
@@ -19,6 +20,7 @@ void main() {
     String userId = 'user-1',
     String name = 'Diabetes',
     String status = 'active',
+    int version = 1,
     DateTime? deletedAt,
   }) {
     return ConditionsCompanion(
@@ -32,6 +34,7 @@ void main() {
       createdAt: drift.Value(createdAt),
       updatedAt: drift.Value(updatedAt),
       deletedAt: drift.Value(deletedAt),
+      version: drift.Value(version),
     );
   }
 
@@ -200,38 +203,41 @@ void main() {
       expect(condition!.name, 'Updated Diabetes');
       expect(condition.status, 'inactive');
     });
-
     test(
-      'should create pending outbox entry when updating condition',
+      'should create update outbox entry with original baseVersion',
       () async {
         await createUser();
 
-        await dataSource.insertCondition(createCondition());
+        final conditionsDao = ConditionsDao(database);
 
-        final updatedCondition = createCondition(
-          name: 'Updated Diabetes',
-          status: 'inactive',
+        // Simulate a condition received from the server.
+        await conditionsDao.applyRemoteCondition(createCondition(version: 3));
+
+        final result = await dataSource.updateCondition(
+          createCondition(name: 'Updated Diabetes', status: 'inactive'),
         );
 
-        await dataSource.updateCondition(updatedCondition);
+        expect(result, isTrue);
 
         final entries = await database.outboxDao.getPendingEntries(
           userId: 'user-1',
         );
 
-        expect(entries, hasLength(2));
+        expect(entries, hasLength(1));
 
-        final entry = entries.last;
+        final entry = entries.single;
 
         expect(entry.entityType, 'condition');
         expect(entry.entityId, 'condition-1');
         expect(entry.operation, 'update');
         expect(entry.status, 'pending');
-        expect(entry.attempts, 0);
-        expect(entry.lastError, isNull);
+        expect(entry.baseVersion, 3);
 
-        expect(entry.payload, contains('"name":"Updated Diabetes"'));
-        expect(entry.payload, contains('"status":"inactive"'));
+        final condition = await dataSource.getConditionById('condition-1');
+
+        expect(condition, isNotNull);
+        expect(condition!.name, 'Updated Diabetes');
+        expect(condition.version, 3);
       },
     );
   });

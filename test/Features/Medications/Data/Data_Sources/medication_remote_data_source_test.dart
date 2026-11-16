@@ -1,4 +1,3 @@
-
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mind_care/Features/Medications/Data/Data_Sources/medication_remote_data_source_impl.dart';
@@ -37,18 +36,10 @@ void main() {
 
   group('getMedicationById', () {
     test('returns parsed medication', () async {
-      when(
-        () => dio.get('/medications/medication-1'),
-      ).thenAnswer(
+      when(() => dio.get('/medications/medication-1')).thenAnswer(
         (_) async => Response(
-          requestOptions: RequestOptions(
-            path: '/medications/medication-1',
-          ),
-          data: {
-            'success': true,
-            'data': medicationResponse,
-            'message': null,
-          },
+          requestOptions: RequestOptions(path: '/medications/medication-1'),
+          data: {'success': true, 'data': medicationResponse, 'message': null},
           statusCode: 200,
         ),
       );
@@ -68,15 +59,12 @@ void main() {
       expect(result.prescribedBy, 'Dr. Smith');
       expect(result.notes, 'Take after meals');
 
-      verify(
-        () => dio.get('/medications/medication-1'),
-      ).called(1);
+      verify(() => dio.get('/medications/medication-1')).called(1);
     });
   });
 
   group('createMedication', () {
-    test('sends correct request body and returns created medication',
-        () async {
+    test('sends correct request body and returns created medication', () async {
       final startDate = DateTime.utc(2026, 10, 1);
       final endDate = DateTime.utc(2026, 10, 10);
 
@@ -96,16 +84,10 @@ void main() {
         'notes': 'Take after meals',
       };
 
-      when(
-        () => dio.post('/medications', data: requestBody),
-      ).thenAnswer(
+      when(() => dio.post('/medications', data: requestBody)).thenAnswer(
         (_) async => Response(
           requestOptions: RequestOptions(path: '/medications'),
-          data: {
-            'success': true,
-            'data': medicationResponse,
-            'message': null,
-          },
+          data: {'success': true, 'data': medicationResponse, 'message': null},
           statusCode: 201,
         ),
       );
@@ -130,9 +112,7 @@ void main() {
       expect(result.name, 'Ibuprofen');
       expect(result.status, 'active');
 
-      verify(
-        () => dio.post('/medications', data: requestBody),
-      ).called(1);
+      verify(() => dio.post('/medications', data: requestBody)).called(1);
     });
 
     test('sends null for optional fields when omitted', () async {
@@ -152,16 +132,10 @@ void main() {
         'notes': null,
       };
 
-      when(
-        () => dio.post('/medications', data: requestBody),
-      ).thenAnswer(
+      when(() => dio.post('/medications', data: requestBody)).thenAnswer(
         (_) async => Response(
           requestOptions: RequestOptions(path: '/medications'),
-          data: {
-            'success': true,
-            'data': medicationResponse,
-            'message': null,
-          },
+          data: {'success': true, 'data': medicationResponse, 'message': null},
           statusCode: 201,
         ),
       );
@@ -176,15 +150,12 @@ void main() {
 
       expect(result.id, 'medication-1');
 
-      verify(
-        () => dio.post('/medications', data: requestBody),
-      ).called(1);
+      verify(() => dio.post('/medications', data: requestBody)).called(1);
     });
   });
 
   group('updateMedication', () {
-    test('sends correct request body and returns updated medication',
-        () async {
+    test('sends correct request body and returns updated medication', () async {
       final startDate = DateTime.utc(2026, 10, 1);
       final endDate = DateTime.utc(2026, 10, 10);
 
@@ -201,33 +172,28 @@ void main() {
         'status': 'inactive',
         'prescribedBy': 'Dr. Smith',
         'notes': 'Updated note',
+        'expectedVersion': 1,
       };
 
-      when(
-        () => dio.put(
-          '/medications/medication-1',
-          data: requestBody,
-        ),
-      ).thenAnswer(
-        (_) async => Response(
-          requestOptions: RequestOptions(
-            path: '/medications/medication-1',
-          ),
-          data: {
-            'success': true,
-            'data': {
-              ...medicationResponse,
-              'name': 'Ibuprofen Updated',
-              'dosage': '400',
-              'frequencyValue': '1',
-              'status': 'inactive',
-              'notes': 'Updated note',
-            },
-            'message': null,
-          },
-          statusCode: 200,
-        ),
-      );
+      when(() => dio.put('/medications/medication-1', data: requestBody))
+          .thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/medications/medication-1'),
+              data: {
+                'success': true,
+                'data': {
+                  ...medicationResponse,
+                  'name': 'Ibuprofen Updated',
+                  'dosage': '400',
+                  'frequencyValue': '1',
+                  'status': 'inactive',
+                  'notes': 'Updated note',
+                },
+                'message': null,
+              },
+              statusCode: 200,
+            ),
+          );
 
       final result = await dataSource.updateMedication(
         id: 'medication-1',
@@ -243,6 +209,7 @@ void main() {
         status: 'inactive',
         prescribedBy: 'Dr. Smith',
         notes: 'Updated note',
+        expectedVersion: 1,
       );
 
       expect(result.id, 'medication-1');
@@ -251,12 +218,8 @@ void main() {
       expect(result.status, 'inactive');
       expect(result.notes, 'Updated note');
 
-      verify(
-        () => dio.put(
-          '/medications/medication-1',
-          data: requestBody,
-        ),
-      ).called(1);
+      verify(() => dio.put('/medications/medication-1', data: requestBody))
+          .called(1);
     });
 
     test('sends null for omitted optional fields', () async {
@@ -273,23 +236,15 @@ void main() {
         'status': 'active',
         'prescribedBy': null,
         'notes': null,
+        'expectedVersion': 1,
       };
 
       when(
-        () => dio.put(
-          '/medications/medication-1',
-          data: requestBody,
-        ),
+        () => dio.put('/medications/medication-1', data: requestBody),
       ).thenAnswer(
         (_) async => Response(
-          requestOptions: RequestOptions(
-            path: '/medications/medication-1',
-          ),
-          data: {
-            'success': true,
-            'data': medicationResponse,
-            'message': null,
-          },
+          requestOptions: RequestOptions(path: '/medications/medication-1'),
+          data: {'success': true, 'data': medicationResponse, 'message': null},
           statusCode: 200,
         ),
       );
@@ -300,37 +255,28 @@ void main() {
         frequencyType: 'daily',
         route: 'oral',
         status: 'active',
+        expectedVersion: 1,
       );
 
       expect(result.id, 'medication-1');
 
-      verify(
-        () => dio.put(
-          '/medications/medication-1',
-          data: requestBody,
-        ),
-      ).called(1);
+      verify(() => dio.put('/medications/medication-1', data: requestBody))
+          .called(1);
     });
   });
 
   group('deleteMedication', () {
     test('sends delete request', () async {
-      when(
-        () => dio.delete('/medications/medication-1'),
-      ).thenAnswer(
+      when(() => dio.delete('/medications/medication-1')).thenAnswer(
         (_) async => Response(
-          requestOptions: RequestOptions(
-            path: '/medications/medication-1',
-          ),
+          requestOptions: RequestOptions(path: '/medications/medication-1'),
           statusCode: 200,
         ),
       );
 
       await dataSource.deleteMedication('medication-1');
 
-      verify(
-        () => dio.delete('/medications/medication-1'),
-      ).called(1);
+      verify(() => dio.delete('/medications/medication-1')).called(1);
     });
   });
 }

@@ -26,6 +26,7 @@ abstract interface class ConditionRemoteDataSource {
     DateTime? diagnosedAt,
     String? diagnosedBy,
     String? notes,
+    required int expectedVersion,
   });
 
   Future<void> deleteCondition(String id);

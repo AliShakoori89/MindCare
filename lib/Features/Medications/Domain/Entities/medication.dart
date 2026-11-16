@@ -24,6 +24,8 @@ class Medication {
   final DateTime updatedAt;
   final DateTime? deletedAt;
 
+  final int version;
+
   const Medication({
     required this.id,
     required this.userId,
@@ -42,6 +44,7 @@ class Medication {
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
+    this.version = 1,
   });
 
   Medication copyWith({
@@ -62,6 +65,7 @@ class Medication {
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? deletedAt,
+    int? version,
   }) {
     return Medication(
       id: id ?? this.id,
@@ -81,6 +85,7 @@ class Medication {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
+      version: version ?? this.version,
     );
   }
 }

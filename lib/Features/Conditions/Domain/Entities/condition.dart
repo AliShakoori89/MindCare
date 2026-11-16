@@ -9,6 +9,7 @@ class Condition {
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
+  final int version;
 
   const Condition({
     required this.id,
@@ -21,6 +22,7 @@ class Condition {
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
+    this.version = 1,
   });
 
   Condition copyWith({
@@ -34,6 +36,7 @@ class Condition {
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? deletedAt,
+    int? version,
   }) {
     return Condition(
       id: id ?? this.id,
@@ -46,6 +49,7 @@ class Condition {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
+      version: version ?? this.version,
     );
   }
 }

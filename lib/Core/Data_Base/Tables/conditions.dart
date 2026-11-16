@@ -34,4 +34,7 @@ class Conditions extends Table {
   List<Set<Column>> get indexes => [
     {userId},
   ];
+
+  IntColumn get version =>
+      integer().withDefault(const Constant(1))();
 }

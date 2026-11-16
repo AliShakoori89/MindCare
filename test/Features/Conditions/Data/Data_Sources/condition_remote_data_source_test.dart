@@ -220,6 +220,7 @@ void main() {
             'diagnosedAt': null,
             'diagnosedBy': 'Dr. Smith',
             'notes': 'Updated note',
+            'expectedVersion': 1,
           },
         ),
       ).thenAnswer(
@@ -251,6 +252,7 @@ void main() {
         status: 'inactive',
         diagnosedBy: 'Dr. Smith',
         notes: 'Updated note',
+        expectedVersion: 1,
       );
 
       expect(result.id, 'condition-1');
@@ -266,6 +268,7 @@ void main() {
             'diagnosedAt': null,
             'diagnosedBy': 'Dr. Smith',
             'notes': 'Updated note',
+            'expectedVersion': 1,
           },
         ),
       ).called(1);

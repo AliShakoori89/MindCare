@@ -331,6 +331,7 @@ void main() {
       String name = 'Asthma',
       String status = 'active',
       String payloadUserId = 'user-1',
+      int? baseVersion,
     }) async {
       await database.outboxDao.insertOutbox(
         OutboxCompanion.insert(
@@ -349,6 +350,9 @@ void main() {
           }),
           status: 'pending',
           createdAt: timestamp,
+          baseVersion: drift.Value(
+            baseVersion ?? (operation == 'update' ? 1 : null),
+          ),
         ),
       );
     }
@@ -500,6 +504,7 @@ void main() {
           diagnosedAt: null,
           diagnosedBy: null,
           notes: null,
+          expectedVersion: 1,
         ),
       ).thenAnswer(
         (_) async => ConditionModel(
@@ -524,6 +529,7 @@ void main() {
           diagnosedAt: null,
           diagnosedBy: null,
           notes: null,
+          expectedVersion: 1,
         ),
       ).called(1);
     });
@@ -644,6 +650,7 @@ void main() {
         String notes = 'Test medication',
         String? startDate,
         String? endDate,
+        int? baseVersion,
       }) async {
         await database.outboxDao.insertOutbox(
           OutboxCompanion.insert(
@@ -669,6 +676,9 @@ void main() {
             }),
             status: 'pending',
             createdAt: timestamp,
+            baseVersion: drift.Value(
+              baseVersion ?? (operation == 'update' ? 1 : null),
+            ),
           ),
         );
       }
@@ -833,6 +843,7 @@ void main() {
               status: any(named: 'status'),
               prescribedBy: any(named: 'prescribedBy'),
               notes: any(named: 'notes'),
+              expectedVersion: any(named: 'expectedVersion'),
             ),
           );
         },
@@ -905,6 +916,7 @@ void main() {
                 status: 'active',
                 prescribedBy: 'Doctor',
                 notes: 'Updated medication',
+                expectedVersion: any(named: 'expectedVersion'),
               ),
             ).thenAnswer(
                   (_) async => MedicationModel(
@@ -947,6 +959,7 @@ void main() {
                 status: 'active',
                 prescribedBy: 'Doctor',
                 notes: 'Updated medication',
+                expectedVersion: any(named: 'expectedVersion'),
               ),
             ).called(1);
           });

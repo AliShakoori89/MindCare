@@ -9,6 +9,7 @@ class ConditionModel {
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
+  final int version;
 
   const ConditionModel({
     required this.id,
@@ -21,6 +22,7 @@ class ConditionModel {
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
+    this.version = 1,
   });
 
   factory ConditionModel.fromJson(Map<String, dynamic> json) {
@@ -39,6 +41,7 @@ class ConditionModel {
       deletedAt: json['deletedAt'] == null
           ? null
           : DateTime.parse(json['deletedAt'] as String),
+      version: json['version'] as int? ?? 1,
     );
   }
 
@@ -54,6 +57,7 @@ class ConditionModel {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'deletedAt': deletedAt?.toIso8601String(),
+      'version': version,
     };
   }
 }

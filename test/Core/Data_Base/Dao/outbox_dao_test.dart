@@ -30,6 +30,8 @@ void main() {
     int attempts = 0,
     String? lastError,
     DateTime? createdAt,
+    int? baseVersion,
+    String? conflictPayload,
   }) {
     return OutboxCompanion.insert(
       id: id,
@@ -42,8 +44,130 @@ void main() {
       attempts: drift.Value(attempts),
       lastError: drift.Value(lastError),
       createdAt: createdAt ?? now,
+      baseVersion: drift.Value(baseVersion),
+      conflictPayload: drift.Value(conflictPayload),
     );
   }
+  test('getOperationForEntity should return the existing pending operation',
+          () async {
+        await outboxDao.insertOutbox(
+          createEntry(
+            id: 'first',
+            createdAt: DateTime(2026, 10, 21, 8),
+          ),
+        );
+
+        await outboxDao.insertOutbox(
+          createEntry(
+            id: 'second',
+            operation: 'update',
+            createdAt: DateTime(2026, 10, 21, 9),
+          ),
+        );
+
+        final entry = await outboxDao.getOperationForEntity(
+          userId: 'user-1',
+          entityType: 'condition',
+          entityId: 'condition-1',
+        );
+
+        expect(entry, isNotNull);
+        expect(entry!.id, 'first');
+      });
+
+  test('getOperationForEntity should find conflicted operations',
+          () async {
+        await outboxDao.insertOutbox(
+          createEntry(
+            status: 'conflict',
+            operation: 'update',
+            baseVersion: 2,
+            conflictPayload: '{"version":3}',
+          ),
+        );
+
+        final entry = await outboxDao.getOperationForEntity(
+          userId: 'user-1',
+          entityType: 'condition',
+          entityId: 'condition-1',
+        );
+
+        expect(entry, isNotNull);
+        expect(entry!.status, 'conflict');
+        expect(entry.baseVersion, 2);
+      });
+
+  test('hasPendingOrConflict should return true for conflicted entries',
+          () async {
+        await outboxDao.insertOutbox(
+          createEntry(status: 'conflict'),
+        );
+
+        final result = await outboxDao.hasPendingOrConflict(
+          userId: 'user-1',
+          entityType: 'condition',
+          entityId: 'condition-1',
+        );
+
+        expect(result, isTrue);
+      });
+
+  test('updatePayload should preserve baseVersion and conflict data',
+          () async {
+        await outboxDao.insertOutbox(
+          createEntry(
+            status: 'conflict',
+            operation: 'update',
+            baseVersion: 2,
+            conflictPayload: '{"version":3}',
+          ),
+        );
+
+        await outboxDao.updatePayload(
+          id: 'outbox-1',
+          payload: '{"name":"Updated Diabetes"}',
+        );
+
+        final entry = await outboxDao.getById('outbox-1');
+
+        expect(entry, isNotNull);
+        expect(entry!.payload, '{"name":"Updated Diabetes"}');
+        expect(entry.status, 'conflict');
+        expect(entry.baseVersion, 2);
+        expect(entry.conflictPayload, '{"version":3}');
+      });
+
+  test('markAsConflict should save server snapshot without incrementing attempts',
+          () async {
+        await outboxDao.insertOutbox(
+          createEntry(
+            attempts: 2,
+            operation: 'update',
+            baseVersion: 1,
+          ),
+        );
+
+        await outboxDao.markAsConflict(
+          id: 'outbox-1',
+          conflictPayload: '{"version":2,"name":"Server value"}',
+          error: 'Condition has been modified by another device',
+        );
+
+        final entry = await outboxDao.getById('outbox-1');
+
+        expect(entry, isNotNull);
+        expect(entry!.status, 'conflict');
+        expect(entry.attempts, 2);
+        expect(entry.baseVersion, 1);
+        expect(
+          entry.conflictPayload,
+          '{"version":2,"name":"Server value"}',
+        );
+        expect(
+          entry.lastError,
+          'Condition has been modified by another device',
+        );
+      });
 
   test('insertOutbox and getById should work', () async {
     await outboxDao.insertOutbox(createEntry());

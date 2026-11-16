@@ -33,6 +33,7 @@ void main() {
         createdAt: createdAt,
         updatedAt: updatedAt,
         deletedAt: deletedAt,
+        version: 1,
       );
 
       final result = MedicationMapper.toDomain(databaseMedication);
@@ -75,6 +76,7 @@ void main() {
         createdAt: createdAt,
         updatedAt: updatedAt,
         deletedAt: null,
+        version: 1,
       );
 
       final result = MedicationMapper.toDomain(databaseMedication);

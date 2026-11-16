@@ -1138,6 +1138,18 @@ class $ConditionsTable extends Conditions
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _versionMeta = const VerificationMeta(
+    'version',
+  );
+  @override
+  late final GeneratedColumn<int> version = GeneratedColumn<int>(
+    'version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1150,6 +1162,7 @@ class $ConditionsTable extends Conditions
     createdAt,
     updatedAt,
     deletedAt,
+    version,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1238,6 +1251,12 @@ class $ConditionsTable extends Conditions
         deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
       );
     }
+    if (data.containsKey('version')) {
+      context.handle(
+        _versionMeta,
+        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
+      );
+    }
     return context;
   }
 
@@ -1287,6 +1306,10 @@ class $ConditionsTable extends Conditions
         DriftSqlType.dateTime,
         data['${effectivePrefix}deleted_at'],
       ),
+      version: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}version'],
+      )!,
     );
   }
 
@@ -1307,6 +1330,7 @@ class Condition extends DataClass implements Insertable<Condition> {
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
+  final int version;
   const Condition({
     required this.id,
     required this.userId,
@@ -1318,6 +1342,7 @@ class Condition extends DataClass implements Insertable<Condition> {
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
+    required this.version,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1340,6 +1365,7 @@ class Condition extends DataClass implements Insertable<Condition> {
     if (!nullToAbsent || deletedAt != null) {
       map['deleted_at'] = Variable<DateTime>(deletedAt);
     }
+    map['version'] = Variable<int>(version);
     return map;
   }
 
@@ -1363,6 +1389,7 @@ class Condition extends DataClass implements Insertable<Condition> {
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(deletedAt),
+      version: Value(version),
     );
   }
 
@@ -1382,6 +1409,7 @@ class Condition extends DataClass implements Insertable<Condition> {
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      version: serializer.fromJson<int>(json['version']),
     );
   }
   @override
@@ -1398,6 +1426,7 @@ class Condition extends DataClass implements Insertable<Condition> {
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'version': serializer.toJson<int>(version),
     };
   }
 
@@ -1412,6 +1441,7 @@ class Condition extends DataClass implements Insertable<Condition> {
     DateTime? createdAt,
     DateTime? updatedAt,
     Value<DateTime?> deletedAt = const Value.absent(),
+    int? version,
   }) => Condition(
     id: id ?? this.id,
     userId: userId ?? this.userId,
@@ -1423,6 +1453,7 @@ class Condition extends DataClass implements Insertable<Condition> {
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    version: version ?? this.version,
   );
   Condition copyWithCompanion(ConditionsCompanion data) {
     return Condition(
@@ -1440,6 +1471,7 @@ class Condition extends DataClass implements Insertable<Condition> {
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      version: data.version.present ? data.version.value : this.version,
     );
   }
 
@@ -1455,7 +1487,8 @@ class Condition extends DataClass implements Insertable<Condition> {
           ..write('notes: $notes, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('deletedAt: $deletedAt')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('version: $version')
           ..write(')'))
         .toString();
   }
@@ -1472,6 +1505,7 @@ class Condition extends DataClass implements Insertable<Condition> {
     createdAt,
     updatedAt,
     deletedAt,
+    version,
   );
   @override
   bool operator ==(Object other) =>
@@ -1486,7 +1520,8 @@ class Condition extends DataClass implements Insertable<Condition> {
           other.notes == this.notes &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
-          other.deletedAt == this.deletedAt);
+          other.deletedAt == this.deletedAt &&
+          other.version == this.version);
 }
 
 class ConditionsCompanion extends UpdateCompanion<Condition> {
@@ -1500,6 +1535,7 @@ class ConditionsCompanion extends UpdateCompanion<Condition> {
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<DateTime?> deletedAt;
+  final Value<int> version;
   final Value<int> rowid;
   const ConditionsCompanion({
     this.id = const Value.absent(),
@@ -1512,6 +1548,7 @@ class ConditionsCompanion extends UpdateCompanion<Condition> {
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
+    this.version = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ConditionsCompanion.insert({
@@ -1525,6 +1562,7 @@ class ConditionsCompanion extends UpdateCompanion<Condition> {
     required DateTime createdAt,
     required DateTime updatedAt,
     this.deletedAt = const Value.absent(),
+    this.version = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        userId = Value(userId),
@@ -1543,6 +1581,7 @@ class ConditionsCompanion extends UpdateCompanion<Condition> {
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<DateTime>? deletedAt,
+    Expression<int>? version,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1556,6 +1595,7 @@ class ConditionsCompanion extends UpdateCompanion<Condition> {
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
+      if (version != null) 'version': version,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1571,6 +1611,7 @@ class ConditionsCompanion extends UpdateCompanion<Condition> {
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<DateTime?>? deletedAt,
+    Value<int>? version,
     Value<int>? rowid,
   }) {
     return ConditionsCompanion(
@@ -1584,6 +1625,7 @@ class ConditionsCompanion extends UpdateCompanion<Condition> {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
+      version: version ?? this.version,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1621,6 +1663,9 @@ class ConditionsCompanion extends UpdateCompanion<Condition> {
     if (deletedAt.present) {
       map['deleted_at'] = Variable<DateTime>(deletedAt.value);
     }
+    if (version.present) {
+      map['version'] = Variable<int>(version.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1640,6 +1685,7 @@ class ConditionsCompanion extends UpdateCompanion<Condition> {
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
+          ..write('version: $version, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1826,6 +1872,18 @@ class $MedicationsTable extends Medications
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _versionMeta = const VerificationMeta(
+    'version',
+  );
+  @override
+  late final GeneratedColumn<int> version = GeneratedColumn<int>(
+    'version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1845,6 +1903,7 @@ class $MedicationsTable extends Medications
     createdAt,
     updatedAt,
     deletedAt,
+    version,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1985,6 +2044,12 @@ class $MedicationsTable extends Medications
         deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
       );
     }
+    if (data.containsKey('version')) {
+      context.handle(
+        _versionMeta,
+        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
+      );
+    }
     return context;
   }
 
@@ -2062,6 +2127,10 @@ class $MedicationsTable extends Medications
         DriftSqlType.dateTime,
         data['${effectivePrefix}deleted_at'],
       ),
+      version: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}version'],
+      )!,
     );
   }
 
@@ -2089,6 +2158,7 @@ class Medication extends DataClass implements Insertable<Medication> {
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
+  final int version;
   const Medication({
     required this.id,
     required this.userId,
@@ -2107,6 +2177,7 @@ class Medication extends DataClass implements Insertable<Medication> {
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
+    required this.version,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2146,6 +2217,7 @@ class Medication extends DataClass implements Insertable<Medication> {
     if (!nullToAbsent || deletedAt != null) {
       map['deleted_at'] = Variable<DateTime>(deletedAt);
     }
+    map['version'] = Variable<int>(version);
     return map;
   }
 
@@ -2184,6 +2256,7 @@ class Medication extends DataClass implements Insertable<Medication> {
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(deletedAt),
+      version: Value(version),
     );
   }
 
@@ -2210,6 +2283,7 @@ class Medication extends DataClass implements Insertable<Medication> {
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      version: serializer.fromJson<int>(json['version']),
     );
   }
   @override
@@ -2233,6 +2307,7 @@ class Medication extends DataClass implements Insertable<Medication> {
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'version': serializer.toJson<int>(version),
     };
   }
 
@@ -2254,6 +2329,7 @@ class Medication extends DataClass implements Insertable<Medication> {
     DateTime? createdAt,
     DateTime? updatedAt,
     Value<DateTime?> deletedAt = const Value.absent(),
+    int? version,
   }) => Medication(
     id: id ?? this.id,
     userId: userId ?? this.userId,
@@ -2274,6 +2350,7 @@ class Medication extends DataClass implements Insertable<Medication> {
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    version: version ?? this.version,
   );
   Medication copyWithCompanion(MedicationsCompanion data) {
     return Medication(
@@ -2302,6 +2379,7 @@ class Medication extends DataClass implements Insertable<Medication> {
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      version: data.version.present ? data.version.value : this.version,
     );
   }
 
@@ -2324,7 +2402,8 @@ class Medication extends DataClass implements Insertable<Medication> {
           ..write('notes: $notes, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('deletedAt: $deletedAt')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('version: $version')
           ..write(')'))
         .toString();
   }
@@ -2348,6 +2427,7 @@ class Medication extends DataClass implements Insertable<Medication> {
     createdAt,
     updatedAt,
     deletedAt,
+    version,
   );
   @override
   bool operator ==(Object other) =>
@@ -2369,7 +2449,8 @@ class Medication extends DataClass implements Insertable<Medication> {
           other.notes == this.notes &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
-          other.deletedAt == this.deletedAt);
+          other.deletedAt == this.deletedAt &&
+          other.version == this.version);
 }
 
 class MedicationsCompanion extends UpdateCompanion<Medication> {
@@ -2390,6 +2471,7 @@ class MedicationsCompanion extends UpdateCompanion<Medication> {
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<DateTime?> deletedAt;
+  final Value<int> version;
   final Value<int> rowid;
   const MedicationsCompanion({
     this.id = const Value.absent(),
@@ -2409,6 +2491,7 @@ class MedicationsCompanion extends UpdateCompanion<Medication> {
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
+    this.version = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   MedicationsCompanion.insert({
@@ -2429,6 +2512,7 @@ class MedicationsCompanion extends UpdateCompanion<Medication> {
     required DateTime createdAt,
     required DateTime updatedAt,
     this.deletedAt = const Value.absent(),
+    this.version = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        userId = Value(userId),
@@ -2456,6 +2540,7 @@ class MedicationsCompanion extends UpdateCompanion<Medication> {
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<DateTime>? deletedAt,
+    Expression<int>? version,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2476,6 +2561,7 @@ class MedicationsCompanion extends UpdateCompanion<Medication> {
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
+      if (version != null) 'version': version,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2498,6 +2584,7 @@ class MedicationsCompanion extends UpdateCompanion<Medication> {
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<DateTime?>? deletedAt,
+    Value<int>? version,
     Value<int>? rowid,
   }) {
     return MedicationsCompanion(
@@ -2518,6 +2605,7 @@ class MedicationsCompanion extends UpdateCompanion<Medication> {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
+      version: version ?? this.version,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2576,6 +2664,9 @@ class MedicationsCompanion extends UpdateCompanion<Medication> {
     if (deletedAt.present) {
       map['deleted_at'] = Variable<DateTime>(deletedAt.value);
     }
+    if (version.present) {
+      map['version'] = Variable<int>(version.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2602,6 +2693,7 @@ class MedicationsCompanion extends UpdateCompanion<Medication> {
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
+          ..write('version: $version, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -6764,6 +6856,28 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxData> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _baseVersionMeta = const VerificationMeta(
+    'baseVersion',
+  );
+  @override
+  late final GeneratedColumn<int> baseVersion = GeneratedColumn<int>(
+    'base_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _conflictPayloadMeta = const VerificationMeta(
+    'conflictPayload',
+  );
+  @override
+  late final GeneratedColumn<String> conflictPayload = GeneratedColumn<String>(
+    'conflict_payload',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -6776,6 +6890,8 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxData> {
     attempts,
     lastError,
     createdAt,
+    baseVersion,
+    conflictPayload,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -6860,6 +6976,24 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxData> {
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
+    if (data.containsKey('base_version')) {
+      context.handle(
+        _baseVersionMeta,
+        baseVersion.isAcceptableOrUnknown(
+          data['base_version']!,
+          _baseVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('conflict_payload')) {
+      context.handle(
+        _conflictPayloadMeta,
+        conflictPayload.isAcceptableOrUnknown(
+          data['conflict_payload']!,
+          _conflictPayloadMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -6909,6 +7043,14 @@ class $OutboxTable extends Outbox with TableInfo<$OutboxTable, OutboxData> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      baseVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}base_version'],
+      ),
+      conflictPayload: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}conflict_payload'],
+      ),
     );
   }
 
@@ -6929,6 +7071,8 @@ class OutboxData extends DataClass implements Insertable<OutboxData> {
   final int attempts;
   final String? lastError;
   final DateTime createdAt;
+  final int? baseVersion;
+  final String? conflictPayload;
   const OutboxData({
     required this.id,
     this.userId,
@@ -6940,6 +7084,8 @@ class OutboxData extends DataClass implements Insertable<OutboxData> {
     required this.attempts,
     this.lastError,
     required this.createdAt,
+    this.baseVersion,
+    this.conflictPayload,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -6958,6 +7104,12 @@ class OutboxData extends DataClass implements Insertable<OutboxData> {
       map['last_error'] = Variable<String>(lastError);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || baseVersion != null) {
+      map['base_version'] = Variable<int>(baseVersion);
+    }
+    if (!nullToAbsent || conflictPayload != null) {
+      map['conflict_payload'] = Variable<String>(conflictPayload);
+    }
     return map;
   }
 
@@ -6977,6 +7129,12 @@ class OutboxData extends DataClass implements Insertable<OutboxData> {
           ? const Value.absent()
           : Value(lastError),
       createdAt: Value(createdAt),
+      baseVersion: baseVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(baseVersion),
+      conflictPayload: conflictPayload == null && nullToAbsent
+          ? const Value.absent()
+          : Value(conflictPayload),
     );
   }
 
@@ -6996,6 +7154,8 @@ class OutboxData extends DataClass implements Insertable<OutboxData> {
       attempts: serializer.fromJson<int>(json['attempts']),
       lastError: serializer.fromJson<String?>(json['lastError']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      baseVersion: serializer.fromJson<int?>(json['baseVersion']),
+      conflictPayload: serializer.fromJson<String?>(json['conflictPayload']),
     );
   }
   @override
@@ -7012,6 +7172,8 @@ class OutboxData extends DataClass implements Insertable<OutboxData> {
       'attempts': serializer.toJson<int>(attempts),
       'lastError': serializer.toJson<String?>(lastError),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'baseVersion': serializer.toJson<int?>(baseVersion),
+      'conflictPayload': serializer.toJson<String?>(conflictPayload),
     };
   }
 
@@ -7026,6 +7188,8 @@ class OutboxData extends DataClass implements Insertable<OutboxData> {
     int? attempts,
     Value<String?> lastError = const Value.absent(),
     DateTime? createdAt,
+    Value<int?> baseVersion = const Value.absent(),
+    Value<String?> conflictPayload = const Value.absent(),
   }) => OutboxData(
     id: id ?? this.id,
     userId: userId.present ? userId.value : this.userId,
@@ -7037,6 +7201,10 @@ class OutboxData extends DataClass implements Insertable<OutboxData> {
     attempts: attempts ?? this.attempts,
     lastError: lastError.present ? lastError.value : this.lastError,
     createdAt: createdAt ?? this.createdAt,
+    baseVersion: baseVersion.present ? baseVersion.value : this.baseVersion,
+    conflictPayload: conflictPayload.present
+        ? conflictPayload.value
+        : this.conflictPayload,
   );
   OutboxData copyWithCompanion(OutboxCompanion data) {
     return OutboxData(
@@ -7052,6 +7220,12 @@ class OutboxData extends DataClass implements Insertable<OutboxData> {
       attempts: data.attempts.present ? data.attempts.value : this.attempts,
       lastError: data.lastError.present ? data.lastError.value : this.lastError,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      baseVersion: data.baseVersion.present
+          ? data.baseVersion.value
+          : this.baseVersion,
+      conflictPayload: data.conflictPayload.present
+          ? data.conflictPayload.value
+          : this.conflictPayload,
     );
   }
 
@@ -7067,7 +7241,9 @@ class OutboxData extends DataClass implements Insertable<OutboxData> {
           ..write('status: $status, ')
           ..write('attempts: $attempts, ')
           ..write('lastError: $lastError, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('baseVersion: $baseVersion, ')
+          ..write('conflictPayload: $conflictPayload')
           ..write(')'))
         .toString();
   }
@@ -7084,6 +7260,8 @@ class OutboxData extends DataClass implements Insertable<OutboxData> {
     attempts,
     lastError,
     createdAt,
+    baseVersion,
+    conflictPayload,
   );
   @override
   bool operator ==(Object other) =>
@@ -7098,7 +7276,9 @@ class OutboxData extends DataClass implements Insertable<OutboxData> {
           other.status == this.status &&
           other.attempts == this.attempts &&
           other.lastError == this.lastError &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.baseVersion == this.baseVersion &&
+          other.conflictPayload == this.conflictPayload);
 }
 
 class OutboxCompanion extends UpdateCompanion<OutboxData> {
@@ -7112,6 +7292,8 @@ class OutboxCompanion extends UpdateCompanion<OutboxData> {
   final Value<int> attempts;
   final Value<String?> lastError;
   final Value<DateTime> createdAt;
+  final Value<int?> baseVersion;
+  final Value<String?> conflictPayload;
   final Value<int> rowid;
   const OutboxCompanion({
     this.id = const Value.absent(),
@@ -7124,6 +7306,8 @@ class OutboxCompanion extends UpdateCompanion<OutboxData> {
     this.attempts = const Value.absent(),
     this.lastError = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.baseVersion = const Value.absent(),
+    this.conflictPayload = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   OutboxCompanion.insert({
@@ -7137,6 +7321,8 @@ class OutboxCompanion extends UpdateCompanion<OutboxData> {
     this.attempts = const Value.absent(),
     this.lastError = const Value.absent(),
     required DateTime createdAt,
+    this.baseVersion = const Value.absent(),
+    this.conflictPayload = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        entityType = Value(entityType),
@@ -7156,6 +7342,8 @@ class OutboxCompanion extends UpdateCompanion<OutboxData> {
     Expression<int>? attempts,
     Expression<String>? lastError,
     Expression<DateTime>? createdAt,
+    Expression<int>? baseVersion,
+    Expression<String>? conflictPayload,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -7169,6 +7357,8 @@ class OutboxCompanion extends UpdateCompanion<OutboxData> {
       if (attempts != null) 'attempts': attempts,
       if (lastError != null) 'last_error': lastError,
       if (createdAt != null) 'created_at': createdAt,
+      if (baseVersion != null) 'base_version': baseVersion,
+      if (conflictPayload != null) 'conflict_payload': conflictPayload,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -7184,6 +7374,8 @@ class OutboxCompanion extends UpdateCompanion<OutboxData> {
     Value<int>? attempts,
     Value<String?>? lastError,
     Value<DateTime>? createdAt,
+    Value<int?>? baseVersion,
+    Value<String?>? conflictPayload,
     Value<int>? rowid,
   }) {
     return OutboxCompanion(
@@ -7197,6 +7389,8 @@ class OutboxCompanion extends UpdateCompanion<OutboxData> {
       attempts: attempts ?? this.attempts,
       lastError: lastError ?? this.lastError,
       createdAt: createdAt ?? this.createdAt,
+      baseVersion: baseVersion ?? this.baseVersion,
+      conflictPayload: conflictPayload ?? this.conflictPayload,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -7234,6 +7428,12 @@ class OutboxCompanion extends UpdateCompanion<OutboxData> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (baseVersion.present) {
+      map['base_version'] = Variable<int>(baseVersion.value);
+    }
+    if (conflictPayload.present) {
+      map['conflict_payload'] = Variable<String>(conflictPayload.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -7253,6 +7453,8 @@ class OutboxCompanion extends UpdateCompanion<OutboxData> {
           ..write('attempts: $attempts, ')
           ..write('lastError: $lastError, ')
           ..write('createdAt: $createdAt, ')
+          ..write('baseVersion: $baseVersion, ')
+          ..write('conflictPayload: $conflictPayload, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -9152,6 +9354,7 @@ typedef $$ConditionsTableCreateCompanionBuilder = ConditionsCompanion Function({
   required DateTime createdAt,
   required DateTime updatedAt,
   Value<DateTime?> deletedAt,
+  Value<int> version,
   Value<int> rowid,
 });
 typedef $$ConditionsTableUpdateCompanionBuilder = ConditionsCompanion Function({
@@ -9165,6 +9368,7 @@ typedef $$ConditionsTableUpdateCompanionBuilder = ConditionsCompanion Function({
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<DateTime?> deletedAt,
+  Value<int> version,
   Value<int> rowid,
 });
 
@@ -9241,6 +9445,11 @@ class $$ConditionsTableFilterComposer
 
   ColumnFilters<DateTime> get deletedAt => $composableBuilder(
     column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get version => $composableBuilder(
+    column: $table.version,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9322,6 +9531,11 @@ class $$ConditionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$UsersTableOrderingComposer get userId {
     final $$UsersTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -9386,6 +9600,9 @@ class $$ConditionsTableAnnotationComposer
   GeneratedColumn<DateTime> get deletedAt =>
       $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 
+  GeneratedColumn<int> get version =>
+      $composableBuilder(column: $table.version, builder: (column) => column);
+
   $$UsersTableAnnotationComposer get userId {
     final $$UsersTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -9448,6 +9665,7 @@ class $$ConditionsTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
+                Value<int> version = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ConditionsCompanion(
                 id: id,
@@ -9460,6 +9678,7 @@ class $$ConditionsTableTableManager
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
+                version: version,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -9474,6 +9693,7 @@ class $$ConditionsTableTableManager
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<DateTime?> deletedAt = const Value.absent(),
+                Value<int> version = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ConditionsCompanion.insert(
                 id: id,
@@ -9486,6 +9706,7 @@ class $$ConditionsTableTableManager
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
+                version: version,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -9572,6 +9793,7 @@ typedef $$MedicationsTableCreateCompanionBuilder =
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<DateTime?> deletedAt,
+      Value<int> version,
       Value<int> rowid,
     });
 typedef $$MedicationsTableUpdateCompanionBuilder =
@@ -9593,6 +9815,7 @@ typedef $$MedicationsTableUpdateCompanionBuilder =
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<DateTime?> deletedAt,
+      Value<int> version,
       Value<int> rowid,
     });
 
@@ -9704,6 +9927,11 @@ class $$MedicationsTableFilterComposer
 
   ColumnFilters<DateTime> get deletedAt => $composableBuilder(
     column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get version => $composableBuilder(
+    column: $table.version,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9820,6 +10048,11 @@ class $$MedicationsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$UsersTableOrderingComposer get userId {
     final $$UsersTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -9909,6 +10142,9 @@ class $$MedicationsTableAnnotationComposer
   GeneratedColumn<DateTime> get deletedAt =>
       $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 
+  GeneratedColumn<int> get version =>
+      $composableBuilder(column: $table.version, builder: (column) => column);
+
   $$UsersTableAnnotationComposer get userId {
     final $$UsersTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -9978,6 +10214,7 @@ class $$MedicationsTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
+                Value<int> version = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MedicationsCompanion(
                 id: id,
@@ -9997,6 +10234,7 @@ class $$MedicationsTableTableManager
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
+                version: version,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -10018,6 +10256,7 @@ class $$MedicationsTableTableManager
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<DateTime?> deletedAt = const Value.absent(),
+                Value<int> version = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MedicationsCompanion.insert(
                 id: id,
@@ -10037,6 +10276,7 @@ class $$MedicationsTableTableManager
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
+                version: version,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -13024,6 +13264,8 @@ typedef $$OutboxTableCreateCompanionBuilder = OutboxCompanion Function({
   Value<int> attempts,
   Value<String?> lastError,
   required DateTime createdAt,
+  Value<int?> baseVersion,
+  Value<String?> conflictPayload,
   Value<int> rowid,
 });
 typedef $$OutboxTableUpdateCompanionBuilder = OutboxCompanion Function({
@@ -13037,6 +13279,8 @@ typedef $$OutboxTableUpdateCompanionBuilder = OutboxCompanion Function({
   Value<int> attempts,
   Value<String?> lastError,
   Value<DateTime> createdAt,
+  Value<int?> baseVersion,
+  Value<String?> conflictPayload,
   Value<int> rowid,
 });
 
@@ -13096,6 +13340,16 @@ class $$OutboxTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get baseVersion => $composableBuilder(
+    column: $table.baseVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get conflictPayload => $composableBuilder(
+    column: $table.conflictPayload,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -13158,6 +13412,16 @@ class $$OutboxTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get baseVersion => $composableBuilder(
+    column: $table.baseVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get conflictPayload => $composableBuilder(
+    column: $table.conflictPayload,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$OutboxTableAnnotationComposer
@@ -13200,6 +13464,16 @@ class $$OutboxTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get baseVersion => $composableBuilder(
+    column: $table.baseVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get conflictPayload => $composableBuilder(
+    column: $table.conflictPayload,
+    builder: (column) => column,
+  );
 }
 
 class $$OutboxTableTableManager
@@ -13240,6 +13514,8 @@ class $$OutboxTableTableManager
                 Value<int> attempts = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<int?> baseVersion = const Value.absent(),
+                Value<String?> conflictPayload = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => OutboxCompanion(
                 id: id,
@@ -13252,6 +13528,8 @@ class $$OutboxTableTableManager
                 attempts: attempts,
                 lastError: lastError,
                 createdAt: createdAt,
+                baseVersion: baseVersion,
+                conflictPayload: conflictPayload,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -13266,6 +13544,8 @@ class $$OutboxTableTableManager
                 Value<int> attempts = const Value.absent(),
                 Value<String?> lastError = const Value.absent(),
                 required DateTime createdAt,
+                Value<int?> baseVersion = const Value.absent(),
+                Value<String?> conflictPayload = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => OutboxCompanion.insert(
                 id: id,
@@ -13278,6 +13558,8 @@ class $$OutboxTableTableManager
                 attempts: attempts,
                 lastError: lastError,
                 createdAt: createdAt,
+                baseVersion: baseVersion,
+                conflictPayload: conflictPayload,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

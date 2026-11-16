@@ -74,6 +74,7 @@ class MedicationRemoteDataSourceImpl
     required String status,
     String? prescribedBy,
     String? notes,
+    required int expectedVersion,
   }) async {
     final response = await _dio.put(
       '/medications/$id',
@@ -90,6 +91,7 @@ class MedicationRemoteDataSourceImpl
         'status': status,
         'prescribedBy': prescribedBy,
         'notes': notes,
+        'expectedVersion': expectedVersion,
       },
     );
 

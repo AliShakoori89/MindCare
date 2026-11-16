@@ -391,6 +391,7 @@ void main() {
         diagnosedAt: updatedCondition.diagnosedAt,
         diagnosedBy: updatedCondition.diagnosedBy,
         notes: updatedCondition.notes,
+        expectedVersion: 1,
       ),
     ).thenAnswer(
       (_) async => ConditionModel(
@@ -418,6 +419,7 @@ void main() {
         diagnosedAt: updatedCondition.diagnosedAt,
         diagnosedBy: updatedCondition.diagnosedBy,
         notes: updatedCondition.notes,
+        expectedVersion: 1,
       ),
     ).called(1);
 
@@ -569,13 +571,15 @@ void main() {
       userId: session.userId,
     );
 
-    expect(pendingEntries, hasLength(3));
+    expect(pendingEntries, hasLength(1));
+    expect(pendingEntries.single.operation, 'create');
 
-    expect(pendingEntries.map((entry) => entry.operation).toList(), [
-      'create',
-      'update',
-      'update',
-    ]);
+    expect(pendingEntries.single.payload, contains('"name":"Severe Asthma"'));
+
+    expect(
+      pendingEntries.single.payload,
+      contains('"status":"under_treatment"'),
+    );
 
     when(() => getCurrentSession()).thenAnswer((_) async => session);
 
@@ -583,50 +587,6 @@ void main() {
 
     when(
       () => conditionRemoteDataSource.createCondition(
-        id: originalCondition.id,
-        name: originalCondition.name,
-        status: originalCondition.status,
-        diagnosedAt: originalCondition.diagnosedAt,
-        diagnosedBy: originalCondition.diagnosedBy,
-        notes: originalCondition.notes,
-      ),
-    ).thenAnswer((_) async {
-      remoteOperations.add('create');
-
-      return ConditionModel(
-        id: originalCondition.id,
-        userId: session.userId,
-        name: originalCondition.name,
-        status: originalCondition.status,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-      );
-    });
-
-    when(
-      () => conditionRemoteDataSource.updateCondition(
-        id: firstUpdate.id,
-        name: firstUpdate.name,
-        status: firstUpdate.status,
-        diagnosedAt: firstUpdate.diagnosedAt,
-        diagnosedBy: firstUpdate.diagnosedBy,
-        notes: firstUpdate.notes,
-      ),
-    ).thenAnswer((_) async {
-      remoteOperations.add('update-1');
-
-      return ConditionModel(
-        id: firstUpdate.id,
-        userId: session.userId,
-        name: firstUpdate.name,
-        status: firstUpdate.status,
-        createdAt: timestamp,
-        updatedAt: firstUpdate.updatedAt,
-      );
-    });
-
-    when(
-      () => conditionRemoteDataSource.updateCondition(
         id: secondUpdate.id,
         name: secondUpdate.name,
         status: secondUpdate.status,
@@ -635,14 +595,17 @@ void main() {
         notes: secondUpdate.notes,
       ),
     ).thenAnswer((_) async {
-      remoteOperations.add('update-2');
+      remoteOperations.add('create');
 
       return ConditionModel(
         id: secondUpdate.id,
         userId: session.userId,
         name: secondUpdate.name,
         status: secondUpdate.status,
-        createdAt: timestamp,
+        diagnosedAt: secondUpdate.diagnosedAt,
+        diagnosedBy: secondUpdate.diagnosedBy,
+        notes: secondUpdate.notes,
+        createdAt: secondUpdate.createdAt,
         updatedAt: secondUpdate.updatedAt,
       );
     });
@@ -651,8 +614,7 @@ void main() {
     await syncManager.pushChanges();
 
     // Verify exact operation order.
-    expect(remoteOperations, ['create', 'update-1', 'update-2']);
-
+    expect(remoteOperations, ['create']);
     // Verify Outbox is empty.
     final remainingEntries = await database.outboxDao.getPendingEntries(
       userId: session.userId,
@@ -668,6 +630,16 @@ void main() {
     expect(finalCondition, isNotNull);
     expect(finalCondition!.name, 'Severe Asthma');
     expect(finalCondition.status, 'under_treatment');
+    expect(pendingEntries, hasLength(1));
+
+    expect(pendingEntries.single.operation, 'create');
+
+    expect(pendingEntries.single.payload, contains('"name":"Severe Asthma"'));
+
+    expect(
+      pendingEntries.single.payload,
+      contains('"status":"under_treatment"'),
+    );
   });
 
   test('blocks subsequent operations for an entity when a previous operation fails', () async {
@@ -681,7 +653,7 @@ void main() {
 
     final condition = Condition(
       id: 'condition-failure-order-1',
-      userId: 'user-1',
+      userId: session.userId,
       name: 'Asthma',
       status: 'active',
       diagnosedAt: null,
@@ -689,61 +661,46 @@ void main() {
       notes: null,
       createdAt: timestamp,
       updatedAt: timestamp,
-      deletedAt: null,
     );
 
-    await conditionRepository.createCondition(condition);
+    // Seed a condition that already exists on the server.
+    // This must not create an Outbox entry.
+    await database.conditionsDao.applyRemoteCondition(
+      db.ConditionsCompanion.insert(
+        id: condition.id,
+        userId: condition.userId,
+        name: condition.name,
+        status: condition.status,
+        createdAt: condition.createdAt,
+        updatedAt: condition.updatedAt,
+      ),
+    );
 
-    await Future.delayed(const Duration(milliseconds: 2));
-
+    // Register two separate operations: update, then delete.
     await conditionRepository.updateCondition(
       condition.copyWith(name: 'Chronic Asthma'),
     );
 
     await Future.delayed(const Duration(milliseconds: 2));
 
-    await conditionRepository.updateCondition(
-      condition.copyWith(name: 'Severe Asthma'),
-    );
+    await conditionRepository.deleteCondition(condition.id);
 
     final outboxBeforeSync = await database.outboxDao.getPendingEntries(
       userId: session.userId,
     );
 
     expect(outboxBeforeSync.map((entry) => entry.operation).toList(), [
-      'create',
       'update',
-      'update',
+      'delete',
     ]);
+
+    expect(outboxBeforeSync.first.baseVersion, 1);
 
     final remoteOperations = <String>[];
 
     when(() => getCurrentSession()).thenAnswer((_) async => session);
 
-    when(
-      () => conditionRemoteDataSource.createCondition(
-        id: condition.id,
-        name: 'Asthma',
-        status: 'active',
-        diagnosedAt: null,
-        diagnosedBy: null,
-        notes: null,
-      ),
-    ).thenAnswer((_) async {
-      remoteOperations.add('create');
-      return ConditionModel(
-        id: condition.id,
-        userId: 'user-1',
-        name: 'Asthma',
-        status: 'active',
-        diagnosedAt: null,
-        diagnosedBy: null,
-        notes: null,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-      );
-    });
-
+    // First update fails.
     when(
       () => conditionRemoteDataSource.updateCondition(
         id: condition.id,
@@ -752,56 +709,38 @@ void main() {
         diagnosedAt: null,
         diagnosedBy: null,
         notes: null,
+        expectedVersion: 1,
       ),
     ).thenAnswer((_) async {
-      remoteOperations.add('update-1-failed');
+      remoteOperations.add('update-failed');
       throw Exception('Update failed');
     });
 
-    when(
-      () => conditionRemoteDataSource.updateCondition(
-        id: condition.id,
-        name: 'Severe Asthma',
-        status: 'active',
-        diagnosedAt: null,
-        diagnosedBy: null,
-        notes: null,
-      ),
-    ).thenAnswer((_) async {
-      remoteOperations.add('update-2');
-      return ConditionModel(
-        id: condition.id,
-        userId: 'user-1',
-        name: 'Severe Asthma',
-        status: 'active',
-        diagnosedAt: null,
-        diagnosedBy: null,
-        notes: null,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-      );
-    });
+    // This must not execute during the first sync.
+    when(() => conditionRemoteDataSource.deleteCondition(condition.id))
+        .thenAnswer((_) async {
+          remoteOperations.add('delete');
+        });
 
-    // First sync: create succeeds, first update fails,
-    // and the second update must be blocked.
+    // First sync: update fails, so delete must be blocked.
     await syncManager.pushChanges();
 
-    expect(remoteOperations, ['create', 'update-1-failed']);
+    expect(remoteOperations, ['update-failed']);
 
-    final outboxAfterFirstSync = await database.outboxDao.getPendingEntries(
+    var outboxAfterFirstSync = await database.outboxDao.getPendingEntries(
       userId: session.userId,
     );
 
     expect(outboxAfterFirstSync.map((entry) => entry.operation).toList(), [
       'update',
-      'update',
+      'delete',
     ]);
 
     expect(outboxAfterFirstSync[0].attempts, 1);
     expect(outboxAfterFirstSync[0].lastError, contains('Update failed'));
     expect(outboxAfterFirstSync[1].attempts, 0);
 
-    // Retry: the first update now succeeds.
+    // Retry: update now succeeds.
     when(
       () => conditionRemoteDataSource.updateCondition(
         id: condition.id,
@@ -810,12 +749,14 @@ void main() {
         diagnosedAt: null,
         diagnosedBy: null,
         notes: null,
+        expectedVersion: 1,
       ),
     ).thenAnswer((_) async {
-      remoteOperations.add('update-1-retry');
+      remoteOperations.add('update-retry');
+
       return ConditionModel(
         id: condition.id,
-        userId: 'user-1',
+        userId: session.userId,
         name: 'Chronic Asthma',
         status: 'active',
         diagnosedAt: null,
@@ -823,18 +764,14 @@ void main() {
         notes: null,
         createdAt: timestamp,
         updatedAt: timestamp,
+        version: 2,
       );
     });
 
-    // Second sync: both updates must succeed in order.
+    // Second sync: update succeeds, then delete is allowed.
     await syncManager.pushChanges();
 
-    expect(remoteOperations, [
-      'create',
-      'update-1-failed',
-      'update-1-retry',
-      'update-2',
-    ]);
+    expect(remoteOperations, ['update-failed', 'update-retry', 'delete']);
 
     final outboxAfterSecondSync = await database.outboxDao.getPendingEntries(
       userId: session.userId,
@@ -846,8 +783,7 @@ void main() {
       condition.id,
     );
 
-    expect(localCondition, isNotNull);
-    expect(localCondition!.name, 'Severe Asthma');
+    expect(localCondition, isNull);
   });
 
   test('pulls remote condition and stores it locally without creating outbox entry', () async {

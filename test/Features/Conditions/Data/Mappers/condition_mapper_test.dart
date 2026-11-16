@@ -23,6 +23,7 @@ void main() {
         createdAt: createdAt,
         updatedAt: updatedAt,
         deletedAt: deletedAt,
+        version: 1,
       );
 
       final result = ConditionMapper.toDomain(databaseCondition);
@@ -51,6 +52,7 @@ void main() {
         createdAt: createdAt,
         updatedAt: updatedAt,
         deletedAt: null,
+        version: 1,
       );
 
       final result = ConditionMapper.toDomain(databaseCondition);

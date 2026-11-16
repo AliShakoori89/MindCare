@@ -34,6 +34,7 @@ abstract interface class MedicationRemoteDataSource {
     required String status,
     String? prescribedBy,
     String? notes,
+    required int expectedVersion,
   });
 
   Future<void> deleteMedication(String id);

@@ -1,10 +1,10 @@
-
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mind_care/Core/Data_Base/app_database.dart';
 import 'package:mind_care/Core/Data_Base/Dao/users_dao.dart';
 import 'package:mind_care/Features/Medications/Data/Data_Sources/medication_local_data_source_impl.dart';
+import 'package:mind_care/Core/Data_Base/Dao/medications_dao.dart';
 
 void main() {
   late AppDatabase database;
@@ -21,6 +21,7 @@ void main() {
     String frequencyType = 'daily',
     String route = 'oral',
     String status = 'active',
+    int version = 1,
     DateTime? deletedAt,
   }) {
     return MedicationsCompanion(
@@ -41,16 +42,13 @@ void main() {
       createdAt: drift.Value(createdAt),
       updatedAt: drift.Value(updatedAt),
       deletedAt: drift.Value(deletedAt),
+      version: drift.Value(version),
     );
   }
 
   Future<void> createUser({String id = 'user-1'}) async {
     await usersDao.insertUser(
-      UsersCompanion.insert(
-        id: id,
-        createdAt: createdAt,
-        updatedAt: updatedAt,
-      ),
+      UsersCompanion.insert(id: id, createdAt: createdAt, updatedAt: updatedAt),
     );
   }
 
@@ -79,33 +77,68 @@ void main() {
       expect(result.status, 'active');
     });
 
-    test('should create pending outbox entry when inserting medication',
-            () async {
-          await createUser();
+    test(
+      'should update existing create outbox entry when updating medication',
+      () async {
+        await createUser();
 
-          await dataSource.insertMedication(createMedication());
+        await dataSource.insertMedication(createMedication());
 
-          final entries = await database.outboxDao.getPendingEntries(
-            userId: 'user-1',
-          );
+        await dataSource.updateMedication(
+          createMedication(name: 'Updated Metformin', status: 'inactive'),
+        );
 
-          expect(entries, hasLength(1));
+        final entries = await database.outboxDao.getPendingEntries(
+          userId: 'user-1',
+        );
 
-          final entry = entries.first;
+        expect(entries, hasLength(1));
 
-          expect(entry.entityType, 'medication');
-          expect(entry.entityId, 'medication-1');
-          expect(entry.operation, 'create');
-          expect(entry.status, 'pending');
-          expect(entry.attempts, 0);
-          expect(entry.lastError, isNull);
+        final entry = entries.single;
 
-          expect(entry.payload, contains('"name":"Metformin"'));
-          expect(entry.payload, contains('"frequencyType":"daily"'));
-          expect(entry.payload, contains('"route":"oral"'));
-          expect(entry.payload, contains('"dosage":"500"'));
-          expect(entry.payload, contains('"userId":"user-1"'));
-        });
+        expect(entry.entityType, 'medication');
+        expect(entry.entityId, 'medication-1');
+        expect(entry.operation, 'create');
+        expect(entry.status, 'pending');
+        expect(entry.attempts, 0);
+        expect(entry.lastError, isNull);
+        expect(entry.baseVersion, isNull);
+        expect(entry.conflictPayload, isNull);
+
+        expect(entry.payload, contains('"name":"Updated Metformin"'));
+        expect(entry.payload, contains('"status":"inactive"'));
+      },
+    );
+
+    test(
+      'should create pending outbox entry when inserting medication',
+      () async {
+        await createUser();
+
+        await dataSource.insertMedication(createMedication());
+
+        final entries = await database.outboxDao.getPendingEntries(
+          userId: 'user-1',
+        );
+
+        expect(entries, hasLength(1));
+
+        final entry = entries.first;
+
+        expect(entry.entityType, 'medication');
+        expect(entry.entityId, 'medication-1');
+        expect(entry.operation, 'create');
+        expect(entry.status, 'pending');
+        expect(entry.attempts, 0);
+        expect(entry.lastError, isNull);
+
+        expect(entry.payload, contains('"name":"Metformin"'));
+        expect(entry.payload, contains('"frequencyType":"daily"'));
+        expect(entry.payload, contains('"route":"oral"'));
+        expect(entry.payload, contains('"dosage":"500"'));
+        expect(entry.payload, contains('"userId":"user-1"'));
+      },
+    );
   });
 
   group('getMedicationById', () {
@@ -148,17 +181,11 @@ void main() {
       await dataSource.insertMedication(createMedication());
 
       await dataSource.insertMedication(
-        createMedication(
-          id: 'medication-2',
-          name: 'Aspirin',
-        ),
+        createMedication(id: 'medication-2', name: 'Aspirin'),
       );
 
       await dataSource.insertMedication(
-        createMedication(
-          id: 'medication-3',
-          userId: 'user-2',
-        ),
+        createMedication(id: 'medication-3', userId: 'user-2'),
       );
 
       final result = await dataSource.getMedicationsByUserId('user-1');
@@ -184,10 +211,7 @@ void main() {
       await dataSource.insertMedication(createMedication());
 
       await dataSource.insertMedication(
-        createMedication(
-          id: 'medication-2',
-          deletedAt: DateTime(2026, 1, 2),
-        ),
+        createMedication(id: 'medication-2', deletedAt: DateTime(2026, 1, 2)),
       );
 
       final result = await dataSource.getMedicationsByUserId('user-1');
@@ -211,59 +235,69 @@ void main() {
 
       expect(result, isTrue);
 
-      final medication =
-      await dataSource.getMedicationById('medication-1');
+      final medication = await dataSource.getMedicationById('medication-1');
 
       expect(medication, isNotNull);
       expect(medication!.name, 'Updated Metformin');
       expect(medication.status, 'inactive');
     });
 
-    test('should create pending outbox entry when updating medication',
-            () async {
-          await createUser();
+    test(
+      'should not create outbox entry when medication does not exist',
+      () async {
+        await createUser();
 
-          await dataSource.insertMedication(createMedication());
+        final result = await dataSource.updateMedication(createMedication());
 
-          await dataSource.updateMedication(
-            createMedication(
-              name: 'Updated Metformin',
-              status: 'inactive',
-            ),
-          );
+        expect(result, isFalse);
 
-          final entries = await database.outboxDao.getPendingEntries(
-            userId: 'user-1',
-          );
+        final entries = await database.outboxDao.getPendingEntries(
+          userId: 'user-1',
+        );
 
-          expect(entries, hasLength(2));
+        expect(entries, isEmpty);
+      },
+    );
 
-          final entry = entries.last;
+    test(
+      'should create update outbox entry with original baseVersion',
+      () async {
+        await createUser();
 
-          expect(entry.entityType, 'medication');
-          expect(entry.entityId, 'medication-1');
-          expect(entry.operation, 'update');
-          expect(entry.status, 'pending');
-          expect(entry.payload, contains('"name":"Updated Metformin"'));
-          expect(entry.payload, contains('"status":"inactive"'));
-        });
+        final medicationsDao = MedicationsDao(database);
 
-    test('should not create outbox entry when medication does not exist',
-            () async {
-          await createUser();
+        // Simulate a medication received from the server.
+        await medicationsDao.applyRemoteMedication(
+          createMedication(version: 3),
+        );
 
-          final result = await dataSource.updateMedication(
-            createMedication(),
-          );
+        final result = await dataSource.updateMedication(
+          createMedication(name: 'Updated Metformin', status: 'inactive'),
+        );
 
-          expect(result, isFalse);
+        expect(result, isTrue);
 
-          final entries = await database.outboxDao.getPendingEntries(
-            userId: 'user-1',
-          );
+        final entries = await database.outboxDao.getPendingEntries(
+          userId: 'user-1',
+        );
 
-          expect(entries, isEmpty);
-        });
+        expect(entries, hasLength(1));
+
+        final entry = entries.single;
+
+        expect(entry.entityType, 'medication');
+        expect(entry.entityId, 'medication-1');
+        expect(entry.operation, 'update');
+        expect(entry.status, 'pending');
+        expect(entry.baseVersion, 3);
+
+        final medication = await dataSource.getMedicationById('medication-1');
+
+        expect(medication, isNotNull);
+        expect(medication!.name, 'Updated Metformin');
+        expect(medication.version, 3);
+      },
+    );
   });
 
   group('deleteMedication', () {
@@ -279,39 +313,40 @@ void main() {
 
       expect(result, 1);
 
-      final medication =
-      await dataSource.getMedicationById('medication-1');
+      final medication = await dataSource.getMedicationById('medication-1');
 
       expect(medication, isNull);
     });
 
-    test('should create pending outbox entry when deleting medication',
-            () async {
-          await createUser();
+    test(
+      'should create pending outbox entry when deleting medication',
+      () async {
+        await createUser();
 
-          await dataSource.insertMedication(createMedication());
+        await dataSource.insertMedication(createMedication());
 
-          final result = await dataSource.deleteMedication(
-            id: 'medication-1',
-            userId: 'user-1',
-          );
+        final result = await dataSource.deleteMedication(
+          id: 'medication-1',
+          userId: 'user-1',
+        );
 
-          expect(result, 1);
+        expect(result, 1);
 
-          final entries = await database.outboxDao.getPendingEntries(
-            userId: 'user-1',
-          );
+        final entries = await database.outboxDao.getPendingEntries(
+          userId: 'user-1',
+        );
 
-          expect(entries, hasLength(2));
+        expect(entries, hasLength(2));
 
-          final entry = entries.last;
+        final entry = entries.last;
 
-          expect(entry.entityType, 'medication');
-          expect(entry.entityId, 'medication-1');
-          expect(entry.operation, 'delete');
-          expect(entry.status, 'pending');
-          expect(entry.payload, contains('"userId":"user-1"'));
-        });
+        expect(entry.entityType, 'medication');
+        expect(entry.entityId, 'medication-1');
+        expect(entry.operation, 'delete');
+        expect(entry.status, 'pending');
+        expect(entry.payload, contains('"userId":"user-1"'));
+      },
+    );
 
     test('should return zero when medication does not exist', () async {
       await createUser();
@@ -330,42 +365,37 @@ void main() {
       expect(entries, isEmpty);
     });
 
-    test('should not delete medication belonging to another user',
-            () async {
-          await createUser();
-          await createUser(id: 'user-2');
+    test('should not delete medication belonging to another user', () async {
+      await createUser();
+      await createUser(id: 'user-2');
 
-          await dataSource.insertMedication(createMedication());
+      await dataSource.insertMedication(createMedication());
 
-          final result = await dataSource.deleteMedication(
-            id: 'medication-1',
-            userId: 'user-2',
-          );
+      final result = await dataSource.deleteMedication(
+        id: 'medication-1',
+        userId: 'user-2',
+      );
 
-          expect(result, 0);
+      expect(result, 0);
 
-          final medication =
-          await dataSource.getMedicationById('medication-1');
+      final medication = await dataSource.getMedicationById('medication-1');
 
-          expect(medication, isNotNull);
-          expect(medication!.userId, 'user-1');
+      expect(medication, isNotNull);
+      expect(medication!.userId, 'user-1');
 
-          final entries = await database.outboxDao.getPendingEntries(
-            userId: 'user-2',
-          );
+      final entries = await database.outboxDao.getPendingEntries(
+        userId: 'user-2',
+      );
 
-          expect(entries, isEmpty);
-        });
+      expect(entries, isEmpty);
+    });
 
     test('should not create duplicate delete entry', () async {
       await createUser();
 
       await dataSource.insertMedication(createMedication());
 
-      await dataSource.deleteMedication(
-        id: 'medication-1',
-        userId: 'user-1',
-      );
+      await dataSource.deleteMedication(id: 'medication-1', userId: 'user-1');
 
       final secondDelete = await dataSource.deleteMedication(
         id: 'medication-1',

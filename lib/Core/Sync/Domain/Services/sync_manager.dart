@@ -11,6 +11,7 @@ import 'package:mind_care/Features/Conditions/Data/Data_Sources/condition_remote
 
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:mind_care/Features/Medications/Data/Data_Sources/medication_remote_data_source.dart';
 import 'package:mind_care/Features/Medications/Data/Models/medication_model.dart';
 import 'package:mind_care/Features/Medications/Data/Mappers/medication_mapper.dart';
@@ -30,7 +31,6 @@ class SyncManager {
     required this._medicationRemoteDataSource,
   });
 
-
   Future<void> pullChanges() async {
     final session = await _getCurrentSession();
 
@@ -46,14 +46,13 @@ class SyncManager {
 
     await _db.transaction(() async {
       for (final change in response.changes) {
-        final hasPendingOperation =
-        await _db.outboxDao.hasPendingOperation(
+        final hasPendingOrConflict = await _db.outboxDao.hasPendingOrConflict(
           userId: session.userId,
           entityType: change.entity,
           entityId: change.id,
         );
 
-        if (hasPendingOperation) {
+        if (hasPendingOrConflict) {
           continue;
         }
 
@@ -145,9 +144,7 @@ class SyncManager {
             }
 
           default:
-            throw UnsupportedError(
-              'Unsupported sync entity: ${change.entity}',
-            );
+            throw UnsupportedError('Unsupported sync entity: ${change.entity}');
         }
       }
 
@@ -161,7 +158,6 @@ class SyncManager {
       );
     });
   }
-
 
   Future<void> pushChanges() async {
     final session = await _getCurrentSession();
@@ -186,16 +182,10 @@ class SyncManager {
       try {
         switch (entry.entityType) {
           case 'condition':
-            await _pushConditionEntry(
-              entry: entry,
-              userId: session.userId,
-            );
+            await _pushConditionEntry(entry: entry, userId: session.userId);
 
           case 'medication':
-            await _pushMedicationEntry(
-              entry: entry,
-              userId: session.userId,
-            );
+            await _pushMedicationEntry(entry: entry, userId: session.userId);
 
           default:
             throw UnsupportedError(
@@ -204,6 +194,26 @@ class SyncManager {
         }
 
         await _db.outboxDao.deleteById(entry.id);
+      } on DioException catch (error) {
+        blockedEntities.add(entityKey);
+
+        if (error.response?.statusCode == 409) {
+          final responseData = error.response?.data;
+
+          await _db.outboxDao.markAsConflict(
+            id: entry.id,
+            conflictPayload: jsonEncode(responseData),
+            error: 'Server version conflict: ${error.message ?? 'HTTP 409'}',
+          );
+
+          continue;
+        }
+
+        await _db.outboxDao.markAsFailed(
+          id: entry.id,
+          attempts: entry.attempts + 1,
+          error: error.toString(),
+        );
       } catch (error) {
         blockedEntities.add(entityKey);
 
@@ -224,9 +234,7 @@ class SyncManager {
         .getConditionByIdIncludingDeleted(entry.entityId);
 
     if (localCondition == null) {
-      throw StateError(
-        'Local condition ${entry.entityId} does not exist.',
-      );
+      throw StateError('Local condition ${entry.entityId} does not exist.');
     }
 
     if (localCondition.userId != userId) {
@@ -244,15 +252,11 @@ class SyncManager {
         final status = payload['status'];
 
         if (name is! String || name.trim().isEmpty) {
-          throw const FormatException(
-            'Missing or invalid condition name.',
-          );
+          throw const FormatException('Missing or invalid condition name.');
         }
 
         if (status is! String || status.trim().isEmpty) {
-          throw const FormatException(
-            'Missing or invalid condition status.',
-          );
+          throw const FormatException('Missing or invalid condition status.');
         }
 
         final diagnosedAt = _parseOptionalDate(
@@ -265,10 +269,7 @@ class SyncManager {
           'diagnosedBy',
         );
 
-        final notes = _optionalString(
-          payload['notes'],
-          'notes',
-        );
+        final notes = _optionalString(payload['notes'], 'notes');
 
         if (entry.operation == 'create') {
           await _conditionRemoteDataSource.createCondition(
@@ -280,6 +281,14 @@ class SyncManager {
             notes: notes,
           );
         } else {
+          final expectedVersion = entry.baseVersion;
+
+          if (expectedVersion == null || expectedVersion < 1) {
+            throw StateError(
+              'Missing or invalid baseVersion for condition ${entry.entityId}.',
+            );
+          }
+
           await _conditionRemoteDataSource.updateCondition(
             id: entry.entityId,
             name: name,
@@ -287,6 +296,7 @@ class SyncManager {
             diagnosedAt: diagnosedAt,
             diagnosedBy: diagnosedBy,
             notes: notes,
+            expectedVersion: expectedVersion,
           );
         }
 
@@ -295,9 +305,7 @@ class SyncManager {
 
         _validatePayloadUser(payload, userId);
 
-        await _conditionRemoteDataSource.deleteCondition(
-          entry.entityId,
-        );
+        await _conditionRemoteDataSource.deleteCondition(entry.entityId);
 
       default:
         throw UnsupportedError(
@@ -310,62 +318,43 @@ class SyncManager {
     final decoded = jsonDecode(rawPayload);
 
     if (decoded is! Map) {
-      throw const FormatException(
-        'Outbox payload must be a JSON object.',
-      );
+      throw const FormatException('Outbox payload must be a JSON object.');
     }
 
     return Map<String, dynamic>.from(decoded);
   }
 
-  void _validatePayloadUser(
-      Map<String, dynamic> payload,
-      String userId,
-      ) {
+  void _validatePayloadUser(Map<String, dynamic> payload, String userId) {
     if (payload['userId'] != userId) {
-      throw StateError(
-        'Outbox payload belongs to a different user.',
-      );
+      throw StateError('Outbox payload belongs to a different user.');
     }
   }
 
-  String? _optionalString(
-      dynamic value,
-      String fieldName,
-      ) {
+  String? _optionalString(dynamic value, String fieldName) {
     if (value == null) {
       return null;
     }
 
     if (value is! String) {
-      throw FormatException(
-        'Invalid $fieldName value.',
-      );
+      throw FormatException('Invalid $fieldName value.');
     }
 
     return value;
   }
 
-  DateTime? _parseOptionalDate(
-      dynamic value,
-      String fieldName,
-      ) {
+  DateTime? _parseOptionalDate(dynamic value, String fieldName) {
     if (value == null) {
       return null;
     }
 
     if (value is! String) {
-      throw FormatException(
-        'Invalid $fieldName value.',
-      );
+      throw FormatException('Invalid $fieldName value.');
     }
 
     final date = DateTime.tryParse(value);
 
     if (date == null) {
-      throw FormatException(
-        'Invalid $fieldName date.',
-      );
+      throw FormatException('Invalid $fieldName date.');
     }
 
     return date;
@@ -379,9 +368,7 @@ class SyncManager {
         .getMedicationByIdIncludingDeleted(entry.entityId);
 
     if (localMedication == null) {
-      throw StateError(
-        'Local medication ${entry.entityId} does not exist.',
-      );
+      throw StateError('Local medication ${entry.entityId} does not exist.');
     }
 
     if (localMedication.userId != userId) {
@@ -401,28 +388,21 @@ class SyncManager {
         final status = payload['status'];
 
         if (name is! String || name.trim().isEmpty) {
-          throw const FormatException(
-            'Missing or invalid medication name.',
-          );
+          throw const FormatException('Missing or invalid medication name.');
         }
 
-        if (frequencyType is! String ||
-            frequencyType.trim().isEmpty) {
+        if (frequencyType is! String || frequencyType.trim().isEmpty) {
           throw const FormatException(
             'Missing or invalid medication frequencyType.',
           );
         }
 
         if (route is! String || route.trim().isEmpty) {
-          throw const FormatException(
-            'Missing or invalid medication route.',
-          );
+          throw const FormatException('Missing or invalid medication route.');
         }
 
         if (status is! String || status.trim().isEmpty) {
-          throw const FormatException(
-            'Missing or invalid medication status.',
-          );
+          throw const FormatException('Missing or invalid medication status.');
         }
 
         final genericName = _optionalString(
@@ -430,15 +410,9 @@ class SyncManager {
           'genericName',
         );
 
-        final dosage = _optionalString(
-          payload['dosage'],
-          'dosage',
-        );
+        final dosage = _optionalString(payload['dosage'], 'dosage');
 
-        final unit = _optionalString(
-          payload['unit'],
-          'unit',
-        );
+        final unit = _optionalString(payload['unit'], 'unit');
 
         final frequencyValue = _optionalString(
           payload['frequencyValue'],
@@ -450,20 +424,11 @@ class SyncManager {
           'prescribedBy',
         );
 
-        final notes = _optionalString(
-          payload['notes'],
-          'notes',
-        );
+        final notes = _optionalString(payload['notes'], 'notes');
 
-        final startDate = _parseOptionalDate(
-          payload['startDate'],
-          'startDate',
-        );
+        final startDate = _parseOptionalDate(payload['startDate'], 'startDate');
 
-        final endDate = _parseOptionalDate(
-          payload['endDate'],
-          'endDate',
-        );
+        final endDate = _parseOptionalDate(payload['endDate'], 'endDate');
 
         if (entry.operation == 'create') {
           await _medicationRemoteDataSource.createMedication(
@@ -482,6 +447,14 @@ class SyncManager {
             notes: notes,
           );
         } else {
+          final expectedVersion = entry.baseVersion;
+
+          if (expectedVersion == null || expectedVersion < 1) {
+            throw StateError(
+              'Missing or invalid baseVersion for medication ${entry.entityId}.',
+            );
+          }
+
           await _medicationRemoteDataSource.updateMedication(
             id: entry.entityId,
             name: name,
@@ -496,6 +469,7 @@ class SyncManager {
             status: status,
             prescribedBy: prescribedBy,
             notes: notes,
+            expectedVersion: expectedVersion,
           );
         }
 
@@ -504,9 +478,7 @@ class SyncManager {
 
         _validatePayloadUser(payload, userId);
 
-        await _medicationRemoteDataSource.deleteMedication(
-          entry.entityId,
-        );
+        await _medicationRemoteDataSource.deleteMedication(entry.entityId);
 
       default:
         throw UnsupportedError(
@@ -514,5 +486,4 @@ class SyncManager {
         );
     }
   }
-
 }
