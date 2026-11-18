@@ -48,126 +48,116 @@ void main() {
       conflictPayload: drift.Value(conflictPayload),
     );
   }
-  test('getOperationForEntity should return the existing pending operation',
-          () async {
-        await outboxDao.insertOutbox(
-          createEntry(
-            id: 'first',
-            createdAt: DateTime(2026, 10, 21, 8),
-          ),
-        );
 
-        await outboxDao.insertOutbox(
-          createEntry(
-            id: 'second',
-            operation: 'update',
-            createdAt: DateTime(2026, 10, 21, 9),
-          ),
-        );
+  test(
+    'getOperationForEntity should return the existing pending operation',
+    () async {
+      await outboxDao.insertOutbox(
+        createEntry(id: 'first', createdAt: DateTime(2026, 10, 21, 8)),
+      );
 
-        final entry = await outboxDao.getOperationForEntity(
-          userId: 'user-1',
-          entityType: 'condition',
-          entityId: 'condition-1',
-        );
+      await outboxDao.insertOutbox(
+        createEntry(
+          id: 'second',
+          operation: 'update',
+          createdAt: DateTime(2026, 10, 21, 9),
+        ),
+      );
 
-        expect(entry, isNotNull);
-        expect(entry!.id, 'first');
-      });
+      final entry = await outboxDao.getOperationForEntity(
+        userId: 'user-1',
+        entityType: 'condition',
+        entityId: 'condition-1',
+      );
 
-  test('getOperationForEntity should find conflicted operations',
-          () async {
-        await outboxDao.insertOutbox(
-          createEntry(
-            status: 'conflict',
-            operation: 'update',
-            baseVersion: 2,
-            conflictPayload: '{"version":3}',
-          ),
-        );
+      expect(entry, isNotNull);
+      expect(entry!.id, 'first');
+    },
+  );
 
-        final entry = await outboxDao.getOperationForEntity(
-          userId: 'user-1',
-          entityType: 'condition',
-          entityId: 'condition-1',
-        );
+  test('getOperationForEntity should find conflicted operations', () async {
+    await outboxDao.insertOutbox(
+      createEntry(
+        status: 'conflict',
+        operation: 'update',
+        baseVersion: 2,
+        conflictPayload: '{"version":3}',
+      ),
+    );
 
-        expect(entry, isNotNull);
-        expect(entry!.status, 'conflict');
-        expect(entry.baseVersion, 2);
-      });
+    final entry = await outboxDao.getOperationForEntity(
+      userId: 'user-1',
+      entityType: 'condition',
+      entityId: 'condition-1',
+    );
 
-  test('hasPendingOrConflict should return true for conflicted entries',
-          () async {
-        await outboxDao.insertOutbox(
-          createEntry(status: 'conflict'),
-        );
+    expect(entry, isNotNull);
+    expect(entry!.status, 'conflict');
+    expect(entry.baseVersion, 2);
+  });
 
-        final result = await outboxDao.hasPendingOrConflict(
-          userId: 'user-1',
-          entityType: 'condition',
-          entityId: 'condition-1',
-        );
+  test(
+    'hasPendingOrConflict should return true for conflicted entries',
+    () async {
+      await outboxDao.insertOutbox(createEntry(status: 'conflict'));
 
-        expect(result, isTrue);
-      });
+      final result = await outboxDao.hasPendingOrConflict(
+        userId: 'user-1',
+        entityType: 'condition',
+        entityId: 'condition-1',
+      );
 
-  test('updatePayload should preserve baseVersion and conflict data',
-          () async {
-        await outboxDao.insertOutbox(
-          createEntry(
-            status: 'conflict',
-            operation: 'update',
-            baseVersion: 2,
-            conflictPayload: '{"version":3}',
-          ),
-        );
+      expect(result, isTrue);
+    },
+  );
 
-        await outboxDao.updatePayload(
-          id: 'outbox-1',
-          payload: '{"name":"Updated Diabetes"}',
-        );
+  test('updatePayload should preserve baseVersion and conflict data', () async {
+    await outboxDao.insertOutbox(
+      createEntry(
+        status: 'conflict',
+        operation: 'update',
+        baseVersion: 2,
+        conflictPayload: '{"version":3}',
+      ),
+    );
 
-        final entry = await outboxDao.getById('outbox-1');
+    await outboxDao.updatePayload(
+      id: 'outbox-1',
+      payload: '{"name":"Updated Diabetes"}',
+    );
 
-        expect(entry, isNotNull);
-        expect(entry!.payload, '{"name":"Updated Diabetes"}');
-        expect(entry.status, 'conflict');
-        expect(entry.baseVersion, 2);
-        expect(entry.conflictPayload, '{"version":3}');
-      });
+    final entry = await outboxDao.getById('outbox-1');
 
-  test('markAsConflict should save server snapshot without incrementing attempts',
-          () async {
-        await outboxDao.insertOutbox(
-          createEntry(
-            attempts: 2,
-            operation: 'update',
-            baseVersion: 1,
-          ),
-        );
+    expect(entry, isNotNull);
+    expect(entry!.payload, '{"name":"Updated Diabetes"}');
+    expect(entry.status, 'conflict');
+    expect(entry.baseVersion, 2);
+    expect(entry.conflictPayload, '{"version":3}');
+  });
 
-        await outboxDao.markAsConflict(
-          id: 'outbox-1',
-          conflictPayload: '{"version":2,"name":"Server value"}',
-          error: 'Condition has been modified by another device',
-        );
+  test(
+    'markAsConflict should save server snapshot without incrementing attempts',
+    () async {
+      await outboxDao.insertOutbox(
+        createEntry(attempts: 2, operation: 'update', baseVersion: 1),
+      );
 
-        final entry = await outboxDao.getById('outbox-1');
+      await outboxDao.markAsConflict(
+        id: 'outbox-1',
+        conflictPayload: '{"version":2,"name":"Server value"}',
+        error: 'Condition has been modified by another device',
+      );
 
-        expect(entry, isNotNull);
-        expect(entry!.status, 'conflict');
-        expect(entry.attempts, 2);
-        expect(entry.baseVersion, 1);
-        expect(
-          entry.conflictPayload,
-          '{"version":2,"name":"Server value"}',
-        );
-        expect(
-          entry.lastError,
-          'Condition has been modified by another device',
-        );
-      });
+      final entry = await outboxDao.getById('outbox-1');
+
+      expect(entry, isNotNull);
+      expect(entry!.status, 'conflict');
+      expect(entry.attempts, 2);
+      expect(entry.baseVersion, 1);
+      expect(entry.conflictPayload, '{"version":2,"name":"Server value"}');
+      expect(entry.lastError, 'Condition has been modified by another device');
+    },
+  );
 
   test('insertOutbox and getById should work', () async {
     await outboxDao.insertOutbox(createEntry());
@@ -310,58 +300,196 @@ void main() {
     expect(await outboxDao.getById('journal-1'), isNotNull);
   });
 
-  test('hasPendingOperation should return true for matching pending entry',
-          () async {
-        await outboxDao.insertOutbox(createEntry());
+  test(
+    'hasPendingOperation should return true for matching pending entry',
+    () async {
+      await outboxDao.insertOutbox(createEntry());
 
-        final result = await outboxDao.hasPendingOperation(
-          userId: 'user-1',
-          entityType: 'condition',
-          entityId: 'condition-1',
-        );
+      final result = await outboxDao.hasPendingOperation(
+        userId: 'user-1',
+        entityType: 'condition',
+        entityId: 'condition-1',
+      );
 
-        expect(result, isTrue);
-      });
+      expect(result, isTrue);
+    },
+  );
 
-  test('hasPendingOperation should return false for another user or entity',
-          () async {
-        await outboxDao.insertOutbox(createEntry());
+  test(
+    'hasPendingOperation should return false for another user or entity',
+    () async {
+      await outboxDao.insertOutbox(createEntry());
 
-        final differentUser = await outboxDao.hasPendingOperation(
-          userId: 'user-2',
-          entityType: 'condition',
-          entityId: 'condition-1',
-        );
+      final differentUser = await outboxDao.hasPendingOperation(
+        userId: 'user-2',
+        entityType: 'condition',
+        entityId: 'condition-1',
+      );
 
-        final differentEntity = await outboxDao.hasPendingOperation(
-          userId: 'user-1',
-          entityType: 'condition',
-          entityId: 'condition-2',
-        );
+      final differentEntity = await outboxDao.hasPendingOperation(
+        userId: 'user-1',
+        entityType: 'condition',
+        entityId: 'condition-2',
+      );
 
-        final differentType = await outboxDao.hasPendingOperation(
-          userId: 'user-1',
-          entityType: 'medication',
-          entityId: 'condition-1',
-        );
+      final differentType = await outboxDao.hasPendingOperation(
+        userId: 'user-1',
+        entityType: 'medication',
+        entityId: 'condition-1',
+      );
 
-        expect(differentUser, isFalse);
-        expect(differentEntity, isFalse);
-        expect(differentType, isFalse);
-      });
+      expect(differentUser, isFalse);
+      expect(differentEntity, isFalse);
+      expect(differentType, isFalse);
+    },
+  );
 
-  test('hasPendingOperation should return false for non-pending entries',
-          () async {
-        await outboxDao.insertOutbox(
-          createEntry(status: 'processing'),
-        );
+  test(
+    'hasPendingOperation should return false for non-pending entries',
+    () async {
+      await outboxDao.insertOutbox(createEntry(status: 'processing'));
 
-        final result = await outboxDao.hasPendingOperation(
-          userId: 'user-1',
-          entityType: 'condition',
-          entityId: 'condition-1',
-        );
+      final result = await outboxDao.hasPendingOperation(
+        userId: 'user-1',
+        entityType: 'condition',
+        entityId: 'condition-1',
+      );
 
-        expect(result, isFalse);
-      });
+      expect(result, isFalse);
+    },
+  );
+
+  test('resolveKeepLocal should rebase conflicted entry and preserve local changes', () async {
+    final originalCreatedAt = DateTime(2026, 11, 18, 9);
+
+    await outboxDao.insertOutbox(
+      createEntry(
+        id: 'keep-local-1',
+        payload: '{"name":"Local Diabetes"}',
+        operation: 'update',
+        status: 'conflict',
+        attempts: 2,
+        lastError: 'Server version conflict',
+        createdAt: originalCreatedAt,
+        baseVersion: 1,
+        conflictPayload: '{"currentVersion":3}',
+      ),
+    );
+
+    final updatedCount = await outboxDao.resolveKeepLocal(
+      id: 'keep-local-1',
+      currentVersion: 3,
+    );
+
+    final entry = await outboxDao.getById('keep-local-1');
+
+    expect(updatedCount, 1);
+    expect(entry, isNotNull);
+
+    expect(entry!.status, 'pending');
+    expect(entry.baseVersion, 3);
+    expect(entry.conflictPayload, isNull);
+    expect(entry.lastError, isNull);
+
+    // Local changes must remain untouched.
+    expect(entry.payload, '{"name":"Local Diabetes"}');
+    expect(entry.operation, 'update');
+    expect(entry.attempts, 2);
+    expect(entry.createdAt, originalCreatedAt);
+  });
+
+  test('resolveKeepLocal should not modify a non-conflicted entry', () async {
+    await outboxDao.insertOutbox(
+      createEntry(
+        id: 'keep-local-pending-1',
+        status: 'pending',
+        baseVersion: 1,
+      ),
+    );
+
+    final updatedCount = await outboxDao.resolveKeepLocal(
+      id: 'keep-local-pending-1',
+      currentVersion: 3,
+    );
+
+    final entry = await outboxDao.getById('keep-local-pending-1');
+
+    expect(updatedCount, 0);
+    expect(entry, isNotNull);
+    expect(entry!.status, 'pending');
+    expect(entry.baseVersion, 1);
+  });
+
+  test('getConflictEntries should return only conflicted entries for the requested user in order', () async {
+    await outboxDao.insertOutbox(
+      createEntry(
+        id: 'conflict-later',
+        userId: 'user-1',
+        operation: 'update',
+        status: 'conflict',
+        createdAt: DateTime(2026, 10, 21, 12),
+      ),
+    );
+
+    await outboxDao.insertOutbox(
+      createEntry(
+        id: 'pending',
+        userId: 'user-1',
+        status: 'pending',
+        createdAt: DateTime(2026, 10, 21, 7),
+      ),
+    );
+
+    await outboxDao.insertOutbox(
+      createEntry(
+        id: 'conflict-earlier',
+        userId: 'user-1',
+        operation: 'update',
+        status: 'conflict',
+        createdAt: DateTime(2026, 10, 21, 8),
+      ),
+    );
+
+    await outboxDao.insertOutbox(
+      createEntry(
+        id: 'other-user-conflict',
+        userId: 'user-2',
+        operation: 'update',
+        status: 'conflict',
+        createdAt: DateTime(2026, 10, 21, 6),
+      ),
+    );
+
+    await outboxDao.insertOutbox(
+      createEntry(
+        id: 'legacy-null-user-conflict',
+        userId: null,
+        operation: 'update',
+        status: 'conflict',
+        createdAt: DateTime(2026, 10, 21, 5),
+      ),
+    );
+
+    final entries = await outboxDao.getConflictEntries(userId: 'user-1');
+
+    expect(entries.map((entry) => entry.id).toList(), [
+      'conflict-earlier',
+      'conflict-later',
+    ]);
+
+    expect(entries.every((entry) => entry.status == 'conflict'), isTrue);
+  });
+
+  test(
+    'getConflictEntries should return an empty list when no conflicts exist',
+    () async {
+      await outboxDao.insertOutbox(
+        createEntry(id: 'pending-only', status: 'pending'),
+      );
+
+      final entries = await outboxDao.getConflictEntries(userId: 'user-1');
+
+      expect(entries, isEmpty);
+    },
+  );
 }

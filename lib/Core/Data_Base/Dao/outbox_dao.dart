@@ -1,4 +1,3 @@
-
 import 'package:drift/drift.dart';
 
 import '../Tables/outbox.dart';
@@ -7,8 +6,7 @@ import '../app_database.dart';
 part 'outbox_dao.g.dart';
 
 @DriftAccessor(tables: [Outbox])
-class OutboxDao extends DatabaseAccessor<AppDatabase>
-    with _$OutboxDaoMixin {
+class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
   OutboxDao(super.db);
 
   Future<void> insertOutbox(OutboxCompanion entry) {
@@ -16,18 +14,24 @@ class OutboxDao extends DatabaseAccessor<AppDatabase>
   }
 
   // Returns only pending entries that are eligible for synchronization.
-  Future<List<OutboxData>> getPendingEntries({
-    required String userId,
-  }) {
+  Future<List<OutboxData>> getPendingEntries({required String userId}) {
     return (select(outbox)
-      ..where(
+          ..where(
             (entry) =>
-        entry.status.equals('pending') &
-        entry.userId.equals(userId),
-      )
-      ..orderBy([
-            (entry) => OrderingTerm.asc(entry.createdAt),
-      ]))
+                entry.status.equals('pending') & entry.userId.equals(userId),
+          )
+          ..orderBy([(entry) => OrderingTerm.asc(entry.createdAt)]))
+        .get();
+  }
+
+  // Returns conflicted entries for the active user.
+  Future<List<OutboxData>> getConflictEntries({required String userId}) {
+    return (select(outbox)
+          ..where(
+            (entry) =>
+                entry.status.equals('conflict') & entry.userId.equals(userId),
+          )
+          ..orderBy([(entry) => OrderingTerm.asc(entry.createdAt)]))
         .get();
   }
 
@@ -38,17 +42,15 @@ class OutboxDao extends DatabaseAccessor<AppDatabase>
     required String entityId,
   }) {
     return (select(outbox)
-      ..where(
+          ..where(
             (entry) =>
-        entry.userId.equals(userId) &
-        entry.entityType.equals(entityType) &
-        entry.entityId.equals(entityId) &
-        entry.status.isIn(['pending', 'conflict']),
-      )
-      ..orderBy([
-            (entry) => OrderingTerm.asc(entry.createdAt),
-      ])
-      ..limit(1))
+                entry.userId.equals(userId) &
+                entry.entityType.equals(entityType) &
+                entry.entityId.equals(entityId) &
+                entry.status.isIn(['pending', 'conflict']),
+          )
+          ..orderBy([(entry) => OrderingTerm.asc(entry.createdAt)])
+          ..limit(1))
         .getSingleOrNull();
   }
 
@@ -58,16 +60,17 @@ class OutboxDao extends DatabaseAccessor<AppDatabase>
     required String entityType,
     required String entityId,
   }) async {
-    final entry = await (select(outbox)
-      ..where(
-            (item) =>
-        item.userId.equals(userId) &
-        item.entityType.equals(entityType) &
-        item.entityId.equals(entityId) &
-        item.status.isIn(['pending', 'conflict']),
-      )
-      ..limit(1))
-        .getSingleOrNull();
+    final entry =
+        await (select(outbox)
+              ..where(
+                (item) =>
+                    item.userId.equals(userId) &
+                    item.entityType.equals(entityType) &
+                    item.entityId.equals(entityId) &
+                    item.status.isIn(['pending', 'conflict']),
+              )
+              ..limit(1))
+            .getSingleOrNull();
 
     return entry != null;
   }
@@ -78,24 +81,25 @@ class OutboxDao extends DatabaseAccessor<AppDatabase>
     required String entityType,
     required String entityId,
   }) async {
-    final entry = await (select(outbox)
-      ..where(
-            (item) =>
-        item.userId.equals(userId) &
-        item.entityType.equals(entityType) &
-        item.entityId.equals(entityId) &
-        item.status.equals('pending'),
-      )
-      ..limit(1))
-        .getSingleOrNull();
+    final entry =
+        await (select(outbox)
+              ..where(
+                (item) =>
+                    item.userId.equals(userId) &
+                    item.entityType.equals(entityType) &
+                    item.entityId.equals(entityId) &
+                    item.status.equals('pending'),
+              )
+              ..limit(1))
+            .getSingleOrNull();
 
     return entry != null;
   }
 
   Future<OutboxData?> getById(String id) {
-    return (select(outbox)
-      ..where((entry) => entry.id.equals(id)))
-        .getSingleOrNull();
+    return (select(
+      outbox,
+    )..where((entry) => entry.id.equals(id))).getSingleOrNull();
   }
 
   Future<bool> updateOutbox(OutboxCompanion entry) {
@@ -104,14 +108,9 @@ class OutboxDao extends DatabaseAccessor<AppDatabase>
 
   // Updates only the payload. The original baseVersion and conflict data
   // remain unchanged.
-  Future<int> updatePayload({
-    required String id,
-    required String payload,
-  }) {
+  Future<int> updatePayload({required String id, required String payload}) {
     return (update(outbox)..where((entry) => entry.id.equals(id))).write(
-      OutboxCompanion(
-        payload: Value(payload),
-      ),
+      OutboxCompanion(payload: Value(payload)),
     );
   }
 
@@ -152,12 +151,38 @@ class OutboxDao extends DatabaseAccessor<AppDatabase>
     required String entityType,
     required String entityId,
   }) {
-    return (delete(outbox)
-      ..where(
-            (entry) =>
-        entry.entityType.equals(entityType) &
-        entry.entityId.equals(entityId),
-      ))
+    return (delete(outbox)..where(
+          (entry) =>
+              entry.entityType.equals(entityType) &
+              entry.entityId.equals(entityId),
+        ))
         .go();
+  }
+
+  // Resolves a conflict by keeping the local changes and rebasing
+  // the operation on the latest server version.
+  Future<int> resolveKeepLocal({
+    required String id,
+    required int currentVersion,
+  }) {
+    if (currentVersion < 1) {
+      throw ArgumentError.value(
+        currentVersion,
+        'currentVersion',
+        'Must be greater than or equal to 1.',
+      );
+    }
+
+    return (update(outbox)..where(
+          (entry) => entry.id.equals(id) & entry.status.equals('conflict'),
+        ))
+        .write(
+          OutboxCompanion(
+            baseVersion: Value(currentVersion),
+            status: const Value('pending'),
+            conflictPayload: const Value(null),
+            lastError: const Value(null),
+          ),
+        );
   }
 }

@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mind_care/Core/Data_Base/app_database.dart';
 import 'package:mind_care/Core/DI/injection.dart';
 import 'package:mind_care/Core/Sync/Data/Data_Sources/sync_remote_data_source.dart';
+import 'package:mind_care/Core/Sync/Data/Repositories/conflict_repository_impl.dart';
+import 'package:mind_care/Core/Sync/Domain/Repositories/conflict_repository.dart';
 import 'package:mind_care/Features/Patient_Profile/Data/Data_Sources/patient_profile_local_data_source.dart';
 import 'package:mind_care/Features/Patient_Profile/Domain/Repositories/patient_profile_repository.dart';
 import 'package:mind_care/Features/Patient_Profile/Domain/UseCases/create_patient_profile.dart';
@@ -14,6 +16,8 @@ import 'package:mind_care/Features/Conditions/Data/Data_Sources/condition_local_
 import 'package:mind_care/Features/Conditions/Domain/Repositories/condition_repository.dart';
 import 'package:mind_care/Features/Conditions/Domain/Use_Cases/create_condition.dart';
 import 'package:mind_care/Features/Conditions/Presentation/Bloc/condition_bloc.dart';
+import 'package:mind_care/Core/Sync/Domain/UseCases/keep_local_conflict.dart';
+import 'package:mind_care/Core/Sync/Domain/UseCases/accept_server_conflict.dart';
 
 void main() {
   setUp(() async {
@@ -26,72 +30,36 @@ void main() {
   });
 
   test('PatientProfile dependency graph should resolve', () {
-    expect(
-      sl<AppDatabase>(),
-      isA<AppDatabase>(),
-    );
+    expect(sl<AppDatabase>(), isA<AppDatabase>());
 
     expect(
       sl<PatientProfileLocalDataSource>(),
       isA<PatientProfileLocalDataSource>(),
     );
 
-    expect(
-      sl<PatientProfileRepository>(),
-      isA<PatientProfileRepository>(),
-    );
+    expect(sl<PatientProfileRepository>(), isA<PatientProfileRepository>());
 
-    expect(
-      sl<CreatePatientProfile>(),
-      isA<CreatePatientProfile>(),
-    );
+    expect(sl<CreatePatientProfile>(), isA<CreatePatientProfile>());
 
-    expect(
-      sl<GetPatientProfileById>(),
-      isA<GetPatientProfileById>(),
-    );
+    expect(sl<GetPatientProfileById>(), isA<GetPatientProfileById>());
 
-    expect(
-      sl<GetPatientProfileByUserId>(),
-      isA<GetPatientProfileByUserId>(),
-    );
+    expect(sl<GetPatientProfileByUserId>(), isA<GetPatientProfileByUserId>());
 
-    expect(
-      sl<UpdatePatientProfile>(),
-      isA<UpdatePatientProfile>(),
-    );
+    expect(sl<UpdatePatientProfile>(), isA<UpdatePatientProfile>());
 
-    expect(
-      sl<DeletePatientProfile>(),
-      isA<DeletePatientProfile>(),
-    );
+    expect(sl<DeletePatientProfile>(), isA<DeletePatientProfile>());
 
-    expect(
-      sl<PatientProfileBloc>(),
-      isA<PatientProfileBloc>(),
-    );
+    expect(sl<PatientProfileBloc>(), isA<PatientProfileBloc>());
   });
 
   test('Condition dependency graph should resolve', () {
-    expect(
-      sl<ConditionLocalDataSource>(),
-      isA<ConditionLocalDataSource>(),
-    );
+    expect(sl<ConditionLocalDataSource>(), isA<ConditionLocalDataSource>());
 
-    expect(
-      sl<ConditionRepository>(),
-      isA<ConditionRepository>(),
-    );
+    expect(sl<ConditionRepository>(), isA<ConditionRepository>());
 
-    expect(
-      sl<CreateCondition>(),
-      isA<CreateCondition>(),
-    );
+    expect(sl<CreateCondition>(), isA<CreateCondition>());
 
-    expect(
-      sl<ConditionBloc>(),
-      isA<ConditionBloc>(),
-    );
+    expect(sl<ConditionBloc>(), isA<ConditionBloc>());
   });
 
   test('ConditionRepository should be a lazy singleton', () {
@@ -123,10 +91,7 @@ void main() {
   });
 
   test('SyncRemoteDataSource dependency should resolve', () {
-    expect(
-      sl<SyncRemoteDataSource>(),
-      isA<SyncRemoteDataSource>(),
-    );
+    expect(sl<SyncRemoteDataSource>(), isA<SyncRemoteDataSource>());
   });
 
   test('SyncRemoteDataSource should be a lazy singleton', () {
@@ -134,5 +99,38 @@ void main() {
     final second = sl<SyncRemoteDataSource>();
 
     expect(identical(first, second), isTrue);
+  });
+
+  test('ConflictRepository dependency should resolve', () {
+    expect(sl<ConflictRepository>(), isA<ConflictRepositoryImpl>());
+  });
+
+  test('ConflictRepository should be a lazy singleton', () {
+    final first = sl<ConflictRepository>();
+    final second = sl<ConflictRepository>();
+
+    expect(identical(first, second), isTrue);
+  });
+
+  test('KeepLocalConflict dependency should resolve', () {
+    expect(sl<KeepLocalConflict>(), isA<KeepLocalConflict>());
+  });
+
+  test('KeepLocalConflict should be a factory', () {
+    final first = sl<KeepLocalConflict>();
+    final second = sl<KeepLocalConflict>();
+
+    expect(identical(first, second), isFalse);
+  });
+
+  test('AcceptServerConflict dependency should resolve', () {
+    expect(sl<AcceptServerConflict>(), isA<AcceptServerConflict>());
+  });
+
+  test('AcceptServerConflict should be a factory', () {
+    final first = sl<AcceptServerConflict>();
+    final second = sl<AcceptServerConflict>();
+
+    expect(identical(first, second), isFalse);
   });
 }

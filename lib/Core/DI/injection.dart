@@ -109,12 +109,17 @@ import '../Sync/Data/Data_Sources/sync_remote_data_source_impl.dart';
 
 import '../../Features/Conditions/Data/Data_Sources/condition_remote_data_source.dart';
 import '../../Features/Conditions/Data/Data_Sources/condition_remote_data_source_impl.dart';
+import '../Sync/Data/Repositories/conflict_repository_impl.dart';
+import '../Sync/Domain/Repositories/conflict_repository.dart';
 import '../Sync/Domain/Services/sync_manager.dart';
 
 import '../../Features/Medications/Data/Data_Sources/medication_remote_data_source.dart';
 import '../../Features/Medications/Data/Data_Sources/medication_remote_data_source_impl.dart';
 
 import 'package:mind_care/Core/Network/connectivity_service.dart';
+
+import '../Sync/Domain/UseCases/accept_server_conflict.dart';
+import '../Sync/Domain/UseCases/keep_local_conflict.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -129,9 +134,7 @@ void configureDependencies() {
     ),
   );
 
-  sl.registerLazySingleton<ConnectivityService>(
-        () => ConnectivityService(),
-  );
+  sl.registerLazySingleton<ConnectivityService>(() => ConnectivityService());
 
   // Secure Storage for authentication session
   sl.registerLazySingleton<FlutterSecureStorage>(
@@ -162,7 +165,7 @@ void configureDependencies() {
   );
 
   sl.registerLazySingleton<MedicationRemoteDataSource>(
-        () => MedicationRemoteDataSourceImpl(sl<Dio>()),
+    () => MedicationRemoteDataSourceImpl(sl<Dio>()),
   );
 
   sl.registerLazySingleton<SyncManager>(
@@ -515,5 +518,18 @@ void configureDependencies() {
       sl<GetCurrentSession>(),
       sl<Logout>(),
     ),
+  );
+
+  // Conflict Resolution
+  sl.registerLazySingleton<ConflictRepository>(
+    () => ConflictRepositoryImpl(sl<AppDatabase>()),
+  );
+
+  sl.registerFactory<KeepLocalConflict>(
+    () => KeepLocalConflict(sl<ConflictRepository>()),
+  );
+
+  sl.registerFactory<AcceptServerConflict>(
+    () => AcceptServerConflict(sl<ConflictRepository>()),
   );
 }
